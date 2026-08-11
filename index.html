@@ -522,6 +522,15 @@
       <div class="rej-banner" id="rej-banner"></div>
       <button class="btn primary" id="restore-btn" style="width:100%;margin-top:14px">選考に戻す</button>
     </div>
+
+    <button class="linkbtn danger" id="delete-open">この候補者を削除する</button>
+    <div class="reject-box" id="delete-box" hidden>
+      <div class="note" style="margin:0">この操作は取り消せません。候補者「<span id="delete-name"></span>」のデータを完全に削除します。</div>
+      <div class="rb-actions" style="grid-template-columns:1fr 1fr">
+        <button class="btn" id="delete-cancel">やめる</button>
+        <button class="btn primary danger" id="delete-confirm">完全に削除する</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -980,6 +989,8 @@
     document.getElementById("active-ui").hidden=rej;
     document.getElementById("rejected-ui").hidden=!rej;
     document.getElementById("reject-box").hidden=true;
+    document.getElementById("delete-box").hidden=true;
+    document.getElementById("delete-name").textContent=c.name;
     if(rej){
       document.getElementById("rej-banner").innerHTML='<b>'+esc(c.rejType||"見送り")+'</b>です。<br>理由：'+esc(c.rejReason||"未記入")+
         '<br>時期：'+fmt(c.rejDate)+' ／ '+STAGES[c.rejStage||0].name+'まで到達';
@@ -1023,6 +1034,11 @@
   document.getElementById("restore-btn").addEventListener("click",function(){var c=cur;c.status="active";
     delete c.rejReason;delete c.rejType;delete c.rejStage;delete c.rejDate;
     if(!c.due[c.stage])c.due[c.stage]=iso(addDays(today(),3));save();drawSheet();view="active";render();});
+  document.getElementById("delete-open").addEventListener("click",function(){document.getElementById("delete-box").hidden=false;});
+  document.getElementById("delete-cancel").addEventListener("click",function(){document.getElementById("delete-box").hidden=true;});
+  document.getElementById("delete-confirm").addEventListener("click",function(){
+    var id=cur.id;data.items=data.items.filter(function(c){return c.id!==id;});save();closeS();render();
+  });
 
   // ---- select+add ----
   function selPlus(el,opts){
