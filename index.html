@@ -1559,12 +1559,12 @@
   }
 
   // ---- Excel(xlsx) 入出力 ----
-  var XLSX_HEAD=["応募日","名前","フリガナ","媒体","屋号","電話番号","電話","LINE流入","一次予約","一次着座","二次調整","二次着座","内定","内定承諾","入職","有効","不通","LINE移行なし","辞退","不採用","見送り理由","担当CA","メモ","面談メモ"];
+  var XLSX_HEAD=["応募日","名前","フリガナ","媒体","屋号","電話番号","電話","LINE流入","一次予約","一次着座","二次調整","二次着座","内定","内定承諾","入職","不採用","辞退","不通","有効","LINE移行なし","見送り理由","担当CA","メモ","面談メモ"];
   function candidateRow(c){
     var r=reached(c),rej=c.status==="rejected";
     return [c.applied||"",c.name||"",c.furigana||"",c.media||"",c.company||"",c.phone||"",c.phoneStatus||"",
-      r>=2,r>=3,r>=4,r>=5,r>=6,r>=7,r>=8,r>=9,r>=1,
-      rej&&c.rejType==="不通",rej&&c.rejType==="LINE移行なし",rej&&c.rejType==="辞退",rej&&c.rejType==="不採用",
+      r>=2,r>=3,r>=4,r>=5,r>=6,r>=7,r>=8,r>=9,
+      rej&&c.rejType==="不採用",rej&&c.rejType==="辞退",rej&&c.rejType==="不通",r>=1,rej&&c.rejType==="LINE移行なし",
       rej?(c.rejReason||""):"",c.ca?pname(c.ca):"",c.notes||"",c.interviewNotes||""];
   }
   function exportXLSX(){
@@ -1588,7 +1588,7 @@
   function downloadTemplateXLSX(){
     if(typeof XLSX==="undefined"){alert("準備中です。少し待ってからもう一度お試しください。");return;}
     var sample=["2026-08-01","（例）山田 太郎","（例）ヤマダ タロウ","Indeed","","090-0000-0000","未架電",
-      true,false,false,false,false,false,false,false,true,false,false,false,false,"","","",""];
+      true,false,false,false,false,false,false,false,false,false,false,true,false,"","","",""];
     var wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([XLSX_HEAD,sample]),"テンプレート");
     XLSX.writeFile(wb,"候補者インポート_テンプレート.xlsx");
