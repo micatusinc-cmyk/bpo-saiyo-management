@@ -6,6 +6,8 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <text x="256" y="330" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif"
-    font-size="260" font-weight="700" fill="#ffffff" text-anchor="middle">採</text>
+  <text x="256" y="216" font-family="-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif"
+    font-size="108" font-weight="800" letter-spacing="4" fill="#ffffff" text-anchor="middle">BPO</text>
+  <text x="256" y="368" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif"
+    font-size="160" font-weight="700" letter-spacing="2" fill="#ffffff" text-anchor="middle">採用</text>
 </svg>
