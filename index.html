@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPO採用管理 ATS</title>
+<style>
+  :root{
+    --bg:#EEF0F9; --bg-blob-1:#7C6CFF; --bg-blob-2:#2FD9C4;
+    --panel:rgba(255,255,255,.72); --panel-solid:#FFFFFF; --panel-2:rgba(255,255,255,.48);
+    --ink:#15172E; --muted:#5B5E7E; --faint:#9598B8;
+    --line:rgba(21,23,46,.09); --line-strong:rgba(21,23,46,.16);
+    --accent:#5B4FE9; --accent-2:#7C6CFF; --accent-weak:rgba(91,79,233,.12); --accent-ink:#4436C9;
+    --over:#E23F5C; --over-bg:rgba(226,63,92,.12);
+    --soon:#D98A1F; --soon-bg:rgba(217,138,31,.13);
+    --ok:#0FA981; --ok-bg:rgba(15,169,129,.12);
+    --shadow:0 1px 2px rgba(21,23,46,.05),0 14px 32px -12px rgba(76,66,180,.20);
+    --sheet-shadow:0 -18px 50px -10px rgba(21,23,46,.30);
+    --blur:18px;
+    --pA:#5B4FE9; --pB:#2E7DE0; --pC:#0FA981; --pD:#D98A1F; --pE:#D6488F;
+    --radius:18px;
+    --fs:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0A0B18; --bg-blob-1:#5B4FE9; --bg-blob-2:#12B8A6;
+      --panel:rgba(255,255,255,.055); --panel-solid:#171933; --panel-2:rgba(255,255,255,.035);
+      --ink:#ECEDFA; --muted:#9EA1C4; --faint:#666AA0;
+      --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+      --accent:#8C7DFF; --accent-2:#A69BFF; --accent-weak:rgba(140,125,255,.18); --accent-ink:#C7BEFF;
+      --over:#FF6E86; --over-bg:rgba(255,110,134,.16);
+      --soon:#F2AE4D; --soon-bg:rgba(242,174,77,.16);
+      --ok:#35D6A9; --ok-bg:rgba(53,214,169,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -14px rgba(0,0,0,.55);
+      --sheet-shadow:0 -18px 50px -10px rgba(0,0,0,.65);
+      --pA:#8C7DFF; --pB:#5B9CF2; --pC:#35D6A9; --pD:#F2AE4D; --pE:#EE6EB2;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF0F9; --bg-blob-1:#7C6CFF; --bg-blob-2:#2FD9C4;
+    --panel:rgba(255,255,255,.72); --panel-solid:#FFFFFF; --panel-2:rgba(255,255,255,.48);
+    --ink:#15172E; --muted:#5B5E7E; --faint:#9598B8;
+    --line:rgba(21,23,46,.09); --line-strong:rgba(21,23,46,.16);
+    --accent:#5B4FE9; --accent-2:#7C6CFF; --accent-weak:rgba(91,79,233,.12); --accent-ink:#4436C9;
+    --over:#E23F5C; --over-bg:rgba(226,63,92,.12); --soon:#D98A1F; --soon-bg:rgba(217,138,31,.13); --ok:#0FA981; --ok-bg:rgba(15,169,129,.12);
+    --shadow:0 1px 2px rgba(21,23,46,.05),0 14px 32px -12px rgba(76,66,180,.20);
+    --pA:#5B4FE9; --pB:#2E7DE0; --pC:#0FA981; --pD:#D98A1F; --pE:#D6488F;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A0B18; --bg-blob-1:#5B4FE9; --bg-blob-2:#12B8A6;
+    --panel:rgba(255,255,255,.055); --panel-solid:#171933; --panel-2:rgba(255,255,255,.035);
+    --ink:#ECEDFA; --muted:#9EA1C4; --faint:#666AA0;
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+    --accent:#8C7DFF; --accent-2:#A69BFF; --accent-weak:rgba(140,125,255,.18); --accent-ink:#C7BEFF;
+    --over:#FF6E86; --over-bg:rgba(255,110,134,.16); --soon:#F2AE4D; --soon-bg:rgba(242,174,77,.16); --ok:#35D6A9; --ok-bg:rgba(53,214,169,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -14px rgba(0,0,0,.55);
+    --pA:#8C7DFF; --pB:#5B9CF2; --pC:#35D6A9; --pD:#F2AE4D; --pE:#EE6EB2;
+  }
+
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{margin:0;color:var(--ink);font-family:var(--fs);-webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;line-height:1.5;min-height:100vh;
+    background:
+      radial-gradient(720px 480px at 8% -8%, color-mix(in srgb,var(--bg-blob-1) 20%,transparent),transparent 60%),
+      radial-gradient(640px 520px at 108% 10%, color-mix(in srgb,var(--bg-blob-2) 16%,transparent),transparent 60%),
+      var(--bg);
+    background-attachment:fixed}
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(var(--blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--blur)) saturate(150%);
+    border-bottom:1px solid var(--line);padding:16px 18px 13px}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-weak),0 0 10px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .brand .today{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+  .menu{background:none;border:none;font-size:20px;line-height:1;padding:4px 2px 4px 10px;color:var(--ink);font-weight:700}
+  .stats{display:flex;gap:9px;margin-top:13px}
+  .stat{flex:1;background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--line);border-radius:15px;padding:10px 12px;box-shadow:var(--shadow)}
+  .stat .n{font-size:23px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px;font-weight:650;letter-spacing:.02em}
+  .stat.over .n{color:var(--over)} .stat.soon .n{color:var(--soon)} .stat.ok .n{color:var(--accent)}
+  .owners{display:flex;gap:6px;margin-top:11px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .owners::-webkit-scrollbar{display:none}
+  .ochip{flex:none;display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:999px;padding:4px 10px 4px 4px;font-size:12px;font-weight:650;color:var(--muted)}
+  .ochip b{color:var(--over);font-weight:800}
+  .ochip.clear b{color:var(--ok)}
+  .av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:750;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+  .av.none{background:var(--line-strong)!important;color:var(--muted);box-shadow:none}
+
+  .viewtabs{display:flex;gap:4px;margin-top:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:3px}
+  .viewtabs button{flex:1;border:none;background:transparent;border-radius:10px;padding:9px;font-size:13px;font-weight:700;color:var(--muted);transition:background .15s,color .15s}
+  .viewtabs button span{opacity:.65;font-weight:650;margin-left:3px}
+  .viewtabs button[aria-pressed="true"]{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+
+  .search{margin-top:10px;position:relative;display:flex;align-items:center}
+  .search .search-icon{position:absolute;left:14px;color:var(--faint);pointer-events:none}
+  .search input{width:100%;font-family:inherit;font-size:15px;color:var(--ink);background:var(--panel);backdrop-filter:blur(var(--blur));
+    border:1px solid var(--line-strong);border-radius:13px;padding:11px 14px 11px 40px;color-scheme:light dark;transition:border-color .15s,box-shadow .15s}
+  .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak);outline:none}
+  .search input::placeholder{color:var(--faint)}
+
+  .filters{display:flex;gap:7px;overflow-x:auto;padding:12px 18px 3px;-webkit-overflow-scrolling:touch}
+  .filters::-webkit-scrollbar{display:none}
+  .fchip{flex:none;border:1px solid var(--line-strong);background:var(--panel);color:var(--muted);
+    border-radius:999px;padding:7px 14px;font-size:13px;font-weight:650;transition:background .15s,color .15s,border-color .15s}
+  .fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+  /* swimlane: ステージ縦積み・候補者は横に */
+  .board{display:flex;flex-direction:column;gap:14px;padding:12px 16px 96px}
+  .lane{display:flex;flex-direction:column;gap:9px}
+  .lanehead{display:flex;align-items:center;gap:8px;padding:0 2px}
+  .lanehead .idx{width:23px;height:23px;border-radius:8px;background:linear-gradient(145deg,var(--accent),var(--accent-2));color:#fff;
+    font-size:12px;font-weight:800;display:grid;place-items:center;flex:none;box-shadow:0 3px 8px -2px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .lanehead .ct{font-size:14px;font-weight:750;letter-spacing:-.01em}
+  .lanehead .sub{font-size:11px;color:var(--faint);font-weight:550}
+  .lanehead .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:650}
+  .lanehead .cnt .warn{color:var(--over)}
+  .drop{display:flex;flex-direction:row;gap:10px;overflow-x:auto;min-height:118px;padding:2px 2px 8px;border-radius:14px;transition:background .12s;-webkit-overflow-scrolling:touch}
+  .drop::-webkit-scrollbar{height:0}
+  .drop.drop-hot{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-weak)}
+  .drop .card{width:250px;flex:none}
+  .empty{flex:none;align-self:center;border:1.5px dashed var(--line-strong);border-radius:14px;padding:14px 22px;text-align:center;color:var(--faint);font-size:12px}
+  .board.single{gap:10px;padding-top:12px}
+  .rejlist{display:flex;flex-direction:column;gap:10px}
+  .rejlist .card{width:100%}
+  .early-group{margin-bottom:4px}
+  .early-toggle{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1.5px solid var(--line-strong);
+    background:var(--panel);border-radius:13px;padding:13px 14px;font-size:13px;font-weight:700;color:var(--ink);
+    transition:background .15s,border-color .15s;box-shadow:var(--shadow)}
+  .early-toggle[aria-expanded="true"]{background:var(--accent-weak);border-color:var(--accent)}
+  .early-toggle .et-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
+    border-radius:7px;background:var(--accent-weak);color:var(--accent-ink);font-size:11px;transition:transform .22s}
+  .early-toggle[aria-expanded="true"] .et-icon{transform:rotate(90deg);background:var(--accent);color:#fff}
+  .early-toggle .et-label{color:var(--ink)}
+  .early-toggle .et-count{margin-left:auto;font-size:12px;color:var(--muted);font-weight:650}
+  .early-toggle .et-action{flex:none;font-size:11px;font-weight:800;color:var(--accent-ink);background:var(--accent-weak);
+    padding:5px 11px;border-radius:999px}
+  .early-toggle[aria-expanded="true"] .et-action{background:var(--accent);color:#fff}
+  .early-lanes{display:flex;flex-direction:column;gap:14px;margin-top:12px;padding:12px 0 2px 14px;
+    border-left:2px solid var(--accent);margin-left:10px;animation:earlyOpen .18s ease}
+  @keyframes earlyOpen{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.early-lanes{animation:none}}
+
+  .card{position:relative;background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 14px 13px 17px;box-shadow:var(--shadow);text-align:left;width:100%;overflow:hidden;
+    transition:transform .12s ease,box-shadow .15s;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+  .card:active{transform:scale(.985)}
+  .card.dragging{opacity:.35}
+  .card .stripe{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line-strong);border-radius:0 3px 3px 0}
+  .card.s-over .stripe{background:var(--over)} .card.s-soon .stripe{background:var(--soon)} .card.s-ok .stripe{background:var(--ok)}
+  .card .top{display:flex;align-items:center;gap:9px}
+  .card .name{font-size:15px;font-weight:750;letter-spacing:-.005em}
+  .card .top .av{margin-left:auto;width:26px;height:26px;font-size:12px}
+  .cjob{display:inline-block;font-size:11px;font-weight:700;color:var(--accent-ink);background:var(--accent-weak);border-radius:7px;padding:3px 9px;margin-top:8px}
+  .cmedia{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--faint);margin-top:6px;font-weight:600}
+  .cmedia::before{content:"媒体";font-size:9px;font-weight:700;color:var(--faint);background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+  .card .meta{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .due{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:650;border-radius:8px;padding:3px 8px}
+  .due.s-over{background:var(--over-bg);color:var(--over)} .due.s-soon{background:var(--soon-bg);color:var(--soon)}
+  .due.s-ok{background:var(--ok-bg);color:var(--ok)} .due.s-none{background:var(--panel-2);color:var(--faint);border:1px solid var(--line)}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600}
+  .bar{width:52px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:3px}
+  .card.done .bar i{background:var(--ok)}
+  .rej-meta{font-size:11px;color:var(--faint);margin-top:6px;font-weight:600}
+  .rej-reason{font-size:13px;color:var(--muted);margin-top:5px}
+  .rtag{display:inline-block;font-size:10px;font-weight:750;border-radius:5px;padding:2px 7px;margin-top:7px}
+  .rtag.jitai{background:var(--soon-bg);color:var(--soon)} .rtag.fusaiyo{background:var(--over-bg);color:var(--over)}
+  .rtag.futsu{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+  .tags{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+
+  .drag-ghost{position:fixed;z-index:60;pointer-events:none;box-shadow:0 14px 34px rgba(0,0,0,.35);transform:rotate(1.5deg);opacity:.97;margin:0}
+  body.dragging-active{touch-action:none;-webkit-user-select:none;user-select:none}
+
+  .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:30;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:none;border-radius:999px;padding:14px 24px;font-size:15px;font-weight:750;
+    box-shadow:0 10px 28px -6px color-mix(in srgb,var(--accent) 55%,transparent),0 2px 8px rgba(0,0,0,.12);display:flex;align-items:center;gap:7px;transition:transform .15s}
+  .fab:active{transform:translateX(-50%) scale(.97)}
+
+  .scrim{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--ink) 46%,transparent);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .22s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:760px;margin:0 auto;background:color-mix(in srgb,var(--panel-solid) 92%,transparent);
+    backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);
+    border:1px solid var(--line);border-bottom:none;
+    border-radius:22px 22px 0 0;box-shadow:var(--sheet-shadow);transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+    max-height:90vh;display:flex;flex-direction:column}
+  .sheet.on{transform:translateY(0)}
+  .grip{width:38px;height:4px;border-radius:2px;background:var(--line-strong);margin:9px auto 2px}
+  .sh-head{padding:8px 20px 13px;border-bottom:1px solid var(--line)}
+  .sh-top{display:flex;align-items:center;gap:10px}
+  .sh-top .name{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .sh-top .av{width:32px;height:32px;font-size:14px}
+  .stg{margin-top:9px;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .pill{background:var(--accent-weak);color:var(--accent-ink);border-radius:8px;padding:4px 10px;font-weight:750;font-size:12px}
+  .contact{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .ct-phone{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:750;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:9px;padding:7px 12px;text-decoration:none;box-shadow:0 4px 12px -4px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .tag{font-size:12px;font-weight:650;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:5px 10px}
+  .tag.job{color:var(--accent-ink);background:var(--accent-weak);border-color:transparent}
+  .sh-body{overflow-y:auto;padding:15px 20px 22px;-webkit-overflow-scrolling:touch}
+  .sec-l{font-size:11px;font-weight:750;letter-spacing:.07em;color:var(--faint);text-transform:uppercase;margin:4px 0 9px}
+
+  .notes{width:100%;min-height:76px;resize:vertical;font-family:inherit;font-size:15px;line-height:1.55;
+    background:var(--panel-2);border:1px solid var(--line-strong);border-radius:12px;padding:12px 13px;color:var(--ink);color-scheme:light dark}
+  .due-edit{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .due-edit.flash{animation:flash 1.4s ease}
+  @keyframes flash{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 0 3px var(--accent-weak);border-color:var(--accent)}}
+  .due-edit label{font-size:13px;font-weight:650;color:var(--muted)}
+  .due-edit input{margin-left:auto;font-family:inherit;font-size:15px;font-weight:650;color:var(--ink);
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;padding:7px 10px;color-scheme:light dark}
+  .selrow{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:12px}
+  .selrow label{font-size:13px;font-weight:650;color:var(--muted)}
+  .selrow select{margin-left:auto;font-family:inherit;font-size:15px;font-weight:650;color:var(--ink);background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;padding:8px 10px;color-scheme:light dark}
+
+  .moves{display:flex;gap:9px;margin-top:18px}
+  .btn{flex:1;border-radius:13px;padding:13px;font-size:15px;font-weight:700;border:1px solid var(--line-strong);background:var(--panel);color:var(--ink);transition:transform .12s,box-shadow .15s}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .btn.primary:disabled{opacity:.4;box-shadow:none}
+  .btn.ghost{flex:none;padding:13px 15px;color:var(--muted);background:transparent;border-color:transparent}
+  .btn.danger{background:var(--over);border-color:var(--over);color:#fff}
+  .hint{font-size:12px;color:var(--faint);text-align:center;margin-top:11px}
+  .linkbtn{display:block;width:100%;text-align:center;background:none;border:none;margin-top:18px;font-size:13px;font-weight:650;color:var(--muted);padding:8px}
+  .linkbtn.danger{color:var(--over)}
+  .reject-box{margin-top:10px;background:var(--over-bg);border:1px solid color-mix(in srgb,var(--over) 32%,transparent);border-radius:13px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .reject-box input{font-family:inherit;font-size:15px;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;padding:11px;color:var(--ink)}
+  .rb-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .rb-actions .btn{flex:none;padding:11px 6px;font-size:13px}
+  .rej-banner{background:var(--over-bg);color:var(--over);border-radius:13px;padding:13px 15px;font-size:14px;font-weight:650;line-height:1.55}
+
+  .field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}
+  .field label{font-size:13px;font-weight:650}
+  .field input,.field select,.sp-select{font-family:inherit;font-size:16px;color:var(--ink);background:var(--panel-2);
+    border:1px solid var(--line-strong);border-radius:11px;padding:12px 13px;color-scheme:light dark}
+  .chkline{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+  .chkline input{width:20px;height:20px;accent-color:var(--over)}
+  .sp-row{display:flex;gap:8px}
+  .sp-select{flex:1;width:100%}
+  .sp-add{width:48px;flex:none;border:1px solid var(--line-strong);background:var(--panel);border-radius:11px;font-size:20px;font-weight:700;color:var(--accent)}
+  .sp-new{display:flex;gap:8px;margin-top:8px}
+  .sp-new input{flex:1;font-family:inherit;font-size:16px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:11px;padding:11px 13px}
+  .sp-newok{flex:none;padding:11px 15px}
+
+  .setrow{display:flex;align-items:flex-start;gap:11px;padding:13px 0}
+  .setrow+.setrow{border-top:1px solid var(--line)}
+  .setrow .av{margin-top:4px}
+  .rdwrap{flex:1;display:flex;flex-direction:column;gap:6px}
+  .setname{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--panel-2);color:var(--ink)}
+  .rd{font-size:11px;color:var(--faint);font-weight:600}
+  .setrow .rm{border:none;background:none;color:var(--over);font-size:15px;margin-top:6px;padding:4px}
+  .setrow .used{font-size:10px;color:var(--faint);margin-top:9px;white-space:nowrap}
+  .taglist{display:flex;flex-wrap:wrap;gap:8px}
+  .taglist .t{display:inline-flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:7px 8px 7px 11px;font-size:13px;font-weight:600}
+  .taglist .t button{border:none;background:none;color:var(--faint);font-size:13px;padding:0 2px;line-height:1}
+  .addrow{display:flex;gap:8px;margin-top:10px}
+  .addrow input{flex:1;font-family:inherit;font-size:15px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:10px 12px}
+  .addrow .btn{flex:none;padding:10px 15px}
+  .note{font-size:12px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;line-height:1.55;margin-top:6px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .minif{display:flex;flex-direction:column;gap:5px}
+  .minif label{font-size:12px;font-weight:600;color:var(--muted)}
+  .minif input{font-family:inherit;font-size:15px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:9px;padding:9px 10px;color-scheme:light dark}
+
+  .menu-btn2{background:none;border:none;font-size:22px;color:var(--ink)}
+  .drawer{position:fixed;left:0;top:0;bottom:0;z-index:50;width:78%;max-width:300px;
+    background:color-mix(in srgb,var(--panel-solid) 90%,transparent);backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);
+    border-right:1px solid var(--line);
+    box-shadow:2px 0 40px rgba(21,23,46,.18);transform:translateX(-103%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+    display:flex;flex-direction:column;padding:18px 14px}
+  .drawer.on{transform:translateX(0)}
+  .drawer .dh{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:800;padding:6px 10px 16px}
+  .drawer .dh .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-weak)}
+  .mi{display:flex;align-items:center;gap:13px;width:100%;text-align:left;border:none;background:none;color:var(--ink);font-size:16px;font-weight:650;padding:14px 12px;border-radius:13px;transition:background .15s,color .15s}
+  .mi:active{background:var(--panel-2)}
+  .mi[aria-current="true"]{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+  .dot-ind{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .dot-ind.d-over{background:var(--over)} .dot-ind.d-soon{background:var(--soon)} .dot-ind.d-ok{background:var(--ok)}
+  .ct-phone svg,.csv svg{flex:none}
+  .mi .ic{width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .mi .ic svg{width:20px;height:20px}
+  .mi[aria-current="true"] .ic{color:#fff}
+  .menu svg{display:block}
+
+  #analytics,#flow{padding:14px 18px 96px}
+  table.ftable.flow th,table.ftable.flow td{text-align:left;white-space:normal;vertical-align:top;padding:10px 12px}
+  table.ftable.flow td.fidx{width:34px;padding-right:6px}
+  table.ftable.flow td.fi{font-weight:700;min-width:190px}
+  table.ftable.flow td.fc{color:var(--muted);min-width:150px}
+  table.ftable.flow td.fo{min-width:150px;line-height:1.9}
+  table.ftable.flow tbody tr:nth-child(even){background:var(--panel-2)}
+  .flow-pill{display:inline-block;font-size:12px;font-weight:750;border-radius:6px;padding:2px 8px;margin:1px 0}
+  .fe-row{display:flex;flex-direction:column;gap:8px;padding:12px 0}
+  .fe-row+.fe-row{border-top:1px solid var(--line)}
+  .fe-name{font-family:inherit;font-size:15px;font-weight:650;color:var(--ink);background:var(--panel-2);
+    border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;color-scheme:light dark}
+  .fe-swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .fe-sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;flex:none;transition:transform .12s}
+  .fe-sw.on{border-color:var(--ink);transform:scale(1.12)}
+  table.ftable.flow.edit td{padding:6px 8px}
+  table.ftable.flow.edit input{width:100%;min-width:120px;font-family:inherit;font-size:13px;color:var(--ink);
+    background:var(--panel-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;color-scheme:light dark}
+  .fr-del{border:none;background:none;color:var(--over);padding:6px;flex:none}
+  .ascreen h2{margin:2px 2px 4px;font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .aperiod{display:flex;align-items:center;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
+  .aperiod .pd{font-size:13px;color:var(--muted);font-weight:600}
+  .mr-row{display:flex;align-items:end;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+  .mr-field{display:flex;flex-direction:column;gap:5px}
+  .mr-field label{font-size:11px;font-weight:650;color:var(--muted)}
+  .mr-field input{font-family:inherit;font-size:13px;color:var(--ink);background:var(--panel-2);
+    border:1px solid var(--line-strong);border-radius:9px;padding:7px 9px;color-scheme:light dark}
+  .mr-btn{font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent-weak);border:none;
+    border-radius:9px;padding:8px 12px;flex:none;align-self:flex-end}
+  .aperiod .csv{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:none;border-radius:11px;padding:10px 16px;font-size:13px;font-weight:750;display:flex;align-items:center;gap:6px;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .aperiod .csv:first-of-type{margin-left:auto}
+  .aperiod .csv.ghost2{background:var(--panel);color:var(--ink);border:1px solid var(--line-strong);box-shadow:none}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .kpi{background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--line);border-radius:15px;padding:13px 14px;box-shadow:var(--shadow)}
+  .kpi .n{font-size:25px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+  .kpi .l{font-size:12px;color:var(--muted);font-weight:650;margin-top:3px}
+  .kpi.over .n{color:var(--over)} .kpi.rej .n{color:var(--muted)} .kpi.ok .n{color:var(--accent)}
+  .acard{background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--line);border-radius:16px;padding:16px 17px;box-shadow:var(--shadow);margin-top:14px}
+  .acard h3{margin:0 0 12px;font-size:14px;font-weight:750;display:flex;align-items:center;gap:8px}
+  .acard h3 .sub{font-size:12px;color:var(--faint);font-weight:600;margin-left:auto}
+  .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+  table.ftable{border-collapse:collapse;font-size:12px;min-width:100%}
+  table.ftable th,table.ftable td{border:1px solid var(--line);padding:7px 9px;text-align:right;white-space:nowrap}
+  table.ftable thead th{background:var(--panel-2);color:var(--muted);font-weight:700;position:sticky;top:0}
+  table.ftable th.rowh,table.ftable td.rowh{text-align:left;position:sticky;left:0;background:var(--panel-solid);font-weight:750;z-index:1}
+  table.ftable td.rate{color:var(--accent);font-weight:750}
+  table.ftable td.pos{color:var(--ok);font-weight:750}
+  table.ftable td.neg{color:var(--over);font-weight:750}
+  table.ftable input.inline-budget{width:78px;font-family:inherit;font:inherit;font-variant-numeric:tabular-nums;text-align:right;
+    color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:7px;padding:4px 6px;color-scheme:light dark}
+  table.ftable input.inline-budget:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px var(--accent-weak)}
+  table.ftable tr.actual td{background:var(--accent-weak)}
+  table.ftable tr.actual td.rowh{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+  .brow{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .brow .bl{width:92px;font-size:12px;font-weight:600;color:var(--muted);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brow .bt{flex:1;height:22px;background:var(--panel-2);border-radius:7px;overflow:hidden;display:flex}
+  .brow .bt i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:7px 0 0 7px;min-width:3px}
+  .brow .bt i.over{background:var(--over);border-radius:0}
+  .brow .bv{min-width:44px;text-align:right;font-size:12px;font-weight:750;flex:none}
+  .brow .bv .od{color:var(--over)}
+  .aempty{font-size:13px;color:var(--faint);padding:4px 0}
+  .flegend{display:flex;gap:16px;margin-bottom:10px;font-size:11px;color:var(--muted);font-weight:650}
+  .flegend span{display:flex;align-items:center;gap:6px}
+  .flegend .lf{width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .flegend .lm{width:3px;height:12px;border-radius:2px;background:var(--ink)}
+  .frow{display:flex;align-items:center;gap:10px;margin:10px 0}
+  .frow .fl{width:64px;font-size:11px;font-weight:650;color:var(--muted);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fbar{position:relative;flex:1;height:24px;background:var(--panel-2);border-radius:7px;overflow:visible}
+  .fbar .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:7px;transition:width .2s}
+  .fbar .mark{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px var(--panel)}
+  .fv{min-width:64px;text-align:right;font-size:12px;font-weight:700;flex:none}
+  .fv .fr{display:block;font-size:10px;color:var(--faint);font-weight:650}
+  .rz{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+  .rz:first-child{border-top:none}
+  .rz .rzn{margin-left:auto;font-weight:750}
+
+  /* settings tabs + periods */
+  .stabs{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:16px}
+  .stab{flex:1;border:none;background:transparent;border-radius:9px;padding:9px;font-size:13px;font-weight:700;color:var(--muted);transition:background .15s,color .15s}
+  .stab[aria-selected="true"]{background:var(--accent);color:#fff}
+  .prow{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:9px;transition:border-color .15s,background .15s}
+  .prow.active{border-color:var(--accent);background:var(--accent-weak)}
+  .prhead{display:flex;align-items:center;gap:9px}
+  .prhead .pname{flex:1;font-family:inherit;font-size:15px;font-weight:700;padding:8px 10px;border:1px solid var(--line-strong);border-radius:10px;background:var(--panel);color:var(--ink)}
+  .prhead .use{font-size:11px;font-weight:750;border:1px solid var(--accent);color:var(--accent);background:var(--panel);border-radius:9px;padding:7px 11px;white-space:nowrap}
+  .prhead .use.on{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
+  .prhead .rm{border:none;background:none;color:var(--over);font-size:15px;padding:4px}
+  .pr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .aselect{font-family:inherit;font-size:13px;font-weight:650;color:var(--ink);background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:7px 10px;color-scheme:light dark}
+
+  /* responsive: PC でも見やすく */
+  @media (min-width:820px){
+    .app{max-width:1160px}
+    header{padding:16px 24px 12px} .filters{padding:12px 24px 3px} .board{padding:14px 24px 100px} #analytics,#flow{padding:16px 24px 100px}
+    .brand h1{font-size:19px}
+    .stat .n{font-size:26px} .stat .l{font-size:12px}
+    .drop .card{width:270px}
+    .kpis{grid-template-columns:repeat(4,1fr)}
+    .fab{left:auto;right:32px;transform:none}
+    .fab:active{transform:scale(.97)}
+    .sheet,.drawer{max-width:680px}
+    .grid2{grid-template-columns:repeat(4,1fr)}
+    #set-targets{grid-template-columns:repeat(4,1fr)}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="boot-screen" style="position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;background:var(--bg,#EEF0F9);color:var(--ink,#15172E);font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;padding:24px;text-align:center">
+  <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(91,79,233,.2);border-top-color:#5B4FE9;animation:boot-spin 0.8s linear infinite"></div>
+  <div class="boot-msg" style="font-size:14px;font-weight:600">読み込み中…</div>
+</div>
+<style>@keyframes boot-spin{to{transform:rotate(360deg)}}</style>
+
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <h1 id="screen-title">BPO採用管理</h1>
+      <span class="today" id="today"></span>
+      <button class="menu" id="menu-btn" aria-label="メニュー"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg></button>
+    </div>
+    <div id="home-dash">
+      <div class="stats">
+        <div class="stat over"><div class="n" id="s-over">0</div><div class="l">遅延</div></div>
+        <div class="stat soon"><div class="n" id="s-soon">0</div><div class="l">要注意</div></div>
+        <div class="stat ok"><div class="n" id="s-active">0</div><div class="l">進行中</div></div>
+      </div>
+      <div class="owners" id="owners"></div>
+      <div class="viewtabs" id="viewtabs">
+        <button data-v="active" aria-pressed="true">選考中<span id="vc-active">0</span></button>
+        <button data-v="rejected" aria-pressed="false">辞退・不採用<span id="vc-rej">0</span></button>
+      </div>
+      <div class="search"><svg class="search-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><line x1="20" y1="20" x2="15.8" y2="15.8"/></svg>
+        <input id="search-input" type="search" placeholder="名前・媒体・職種・屋号・電話で検索" autocomplete="off"></div>
+      <div class="selrow" style="margin-top:9px;margin-bottom:0"><label for="month-filter">応募月<span style="display:block;font-size:10px;font-weight:600;color:var(--faint);margin-top:2px">初期対応（応募〜一次着座）のみに適用</span></label><select id="month-filter"></select></div>
+    </div>
+  </header>
+
+  <div class="filters" id="filters"></div>
+  <div class="filters" id="stage-filters"></div>
+  <div class="board" id="board"></div>
+  <div id="analytics" hidden></div>
+  <div id="flow" hidden></div>
+</div>
+
+<button class="fab" id="fab">＋ 候補者を追加</button>
+<div class="scrim" id="scrim"></div>
+
+<!-- Left menu drawer -->
+<div class="drawer" id="drawer" role="menu" aria-label="メニュー">
+  <div class="dh"><span class="dot"></span>BPO採用管理</div>
+  <button class="mi" data-s="home" role="menuitem"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9.2a.8.8 0 0 0 .8.8H10v-5.5a.8.8 0 0 1 .8-.8h2.4a.8.8 0 0 1 .8.8V20h3.2a.8.8 0 0 0 .8-.8V10"/></svg></span>ホーム</button>
+  <button class="mi" data-s="analytics" role="menuitem"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/><path d="M3 20h18"/></svg></span>分析</button>
+  <button class="mi" data-s="flow" role="menuitem"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="7" height="6" rx="1.6"/><rect x="13.5" y="14" width="7" height="6" rx="1.6"/><path d="M7 10v3a2 2 0 0 0 2 2h4"/><path d="M17 14v-1a2 2 0 0 0-2-2H9"/></svg></span>業務フロー</button>
+  <button class="mi" data-s="settings" role="menuitem"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.8"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H4.5a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09A1.7 1.7 0 0 0 11.64 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.04 1.56h.09a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09A1.7 1.7 0 0 0 22.9 10.4h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.56 1.04Z"/></svg></span>設定</button>
+</div>
+
+<!-- Card detail sheet -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="候補者の詳細">
+  <div class="grip"></div>
+  <div class="sh-head">
+    <div class="sh-top">
+      <span class="av" id="sh-av"></span>
+      <span class="name" id="sh-name"></span>
+      <button class="btn ghost" id="sh-close" style="margin-left:auto" aria-label="閉じる">✕</button>
+    </div>
+    <div class="stg" id="sh-stg"></div>
+    <div class="contact" id="sh-contact"></div>
+  </div>
+  <div class="sh-body">
+    <div id="active-ui">
+      <div class="sec-l">担当CA</div>
+      <div class="selrow"><label>担当者</label><select id="sh-ca"></select></div>
+
+      <div class="sec-l" style="margin-top:18px">期日</div>
+      <div class="due-edit" id="due-edit">
+        <label for="due-input">このステージの期日</label>
+        <input type="date" id="due-input">
+      </div>
+
+      <div class="sec-l" style="margin-top:18px">メモ（面談記録・所感）</div>
+      <textarea id="notes" class="notes" placeholder="面談メモ・所感・次アクションなど自由に記入"></textarea>
+
+      <div class="moves">
+        <button class="btn" id="back-btn">← 戻す</button>
+        <button class="btn primary" id="next-btn">次のステージへ →</button>
+      </div>
+      <div class="hint" id="move-hint"></div>
+      <button class="linkbtn danger" id="reject-open">終了ステータスにする</button>
+      <div class="reject-box" id="reject-box" hidden>
+        <input id="reject-reason" placeholder="理由（任意）例：条件不一致 / 連絡つかず">
+        <div class="rb-actions" id="rb-types"></div>
+        <button class="linkbtn" id="reject-cancel" style="margin-top:2px">やめる</button>
+      </div>
+    </div>
+
+    <div id="rejected-ui" hidden>
+      <div class="rej-banner" id="rej-banner"></div>
+      <button class="btn primary" id="restore-btn" style="width:100%;margin-top:14px">選考に戻す</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add candidate sheet -->
+<div class="sheet" id="addsheet" role="dialog" aria-modal="true" aria-label="候補者を追加">
+  <div class="grip"></div>
+  <div class="sh-head"><div class="sh-top"><span class="name">候補者を追加</span>
+    <button class="btn ghost" id="add-close" style="margin-left:auto" aria-label="閉じる">✕</button></div></div>
+  <div class="sh-body">
+    <div class="field"><label for="add-name">お名前</label><input id="add-name" placeholder="例：佐藤 花子" autocomplete="off"></div>
+    <div class="field"><label for="add-applied">応募日</label><input type="date" id="add-applied"></div>
+    <div class="field"><label>応募職種（希望職種）</label><div class="selplus" id="sp-job"></div></div>
+    <div class="field"><label>媒体名（どこから応募？）</label><div class="selplus" id="sp-media"></div></div>
+    <div class="field"><label for="add-phone">電話番号</label>
+      <input id="add-phone" type="tel" inputmode="tel" placeholder="例：090-1234-5678" autocomplete="off"></div>
+    <div class="field"><label for="add-company">屋号（提案先・任意）</label><input id="add-company" placeholder="例：株式会社〇〇" autocomplete="off"></div>
+    <div class="field"><label>担当CA（未割当でもOK）</label><div class="selplus" id="sp-ca"></div></div>
+    <div class="field"><label for="add-stage">開始ステージ</label><select id="add-stage"></select></div>
+    <div class="field"><label for="add-due">このステージの期日</label><input type="date" id="add-due"></div>
+    <button class="btn primary" id="add-save" style="width:100%">追加する</button>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="setsheet" role="dialog" aria-modal="true" aria-label="設定">
+  <div class="grip"></div>
+  <div class="sh-head"><div class="sh-top"><span class="name">設定</span>
+    <button class="btn ghost" id="set-close" style="margin-left:auto" aria-label="閉じる">✕</button></div></div>
+  <div class="sh-body">
+    <div class="stabs" id="stabs">
+      <button class="stab" data-p="basic" aria-selected="true">基本</button>
+      <button class="stab" data-p="period" aria-selected="false">期・期間</button>
+      <button class="stab" data-p="target" aria-selected="false">目標値</button>
+    </div>
+
+    <div class="spane" id="pane-basic">
+      <div class="sec-l">担当者</div>
+      <div id="set-people"></div>
+      <button type="button" class="linkbtn" id="set-addperson" style="margin-top:8px;color:var(--accent)">＋ 担当者を追加</button>
+      <div class="sec-l" style="margin-top:22px">応募職種リスト</div>
+      <div id="set-jobs" class="taglist"></div>
+      <div class="addrow"><input id="set-job-input" placeholder="応募職種を追加" autocomplete="off"><button type="button" class="btn" id="set-job-add">追加</button></div>
+      <div class="sec-l" style="margin-top:22px">媒体リスト</div>
+      <div id="set-media" class="taglist"></div>
+      <div class="addrow"><input id="set-media-input" placeholder="媒体を追加" autocomplete="off"><button type="button" class="btn" id="set-media-add">追加</button></div>
+
+      <div class="sec-l" style="margin-top:22px">リマインド通知</div>
+      <label class="chkline"><input type="checkbox" id="set-notify"> このブラウザを開いた時に遅延をお知らせ</label>
+      <div class="note" id="notify-note" style="margin-top:10px"></div>
+    </div>
+
+    <div class="spane" id="pane-period" hidden>
+      <div class="sec-l">期の一覧</div>
+      <div id="set-periods"></div>
+      <button type="button" class="linkbtn" id="set-addperiod" style="margin-top:8px;color:var(--accent)">＋ 期を追加</button>
+      <div class="note" style="margin-top:12px">「表示中」にした期が、分析とCSV出力の対象になります。0期・7期など名前は自由。期間は「開始月〜終了月」で指定します。</div>
+    </div>
+
+    <div class="spane" id="pane-target" hidden>
+      <div class="selrow" style="margin-bottom:14px"><label for="tgt-month">対象月</label><input type="month" id="tgt-month"></div>
+      <div class="grid2" id="set-targets"></div>
+      <div class="note" style="margin-top:12px">目標値は「月ごと」に登録します。期（開始月〜終了月）とは別に、ここで選んだ月の目標を編集できます。分析画面ではこの月ごとの目標を、選んだ期間ぶん合計して「目標」欄に表示します。</div>
+    </div>
+
+    <button class="btn primary" id="set-save" style="width:100%;margin-top:18px">保存する</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var FIXED=[
+    {id:"A",color:"var(--pA)"},{id:"B",color:"var(--pB)"},{id:"C",color:"var(--pC)"},
+    {id:"D",color:"var(--pD)"},{id:"E",color:"var(--pE)"}
+  ];
+  var EXTRA_COLORS=["#7C5CFC","#E8615A","#2FA98C","#C98A1B","#D6519B","#3B82C4","#8A6D3B"];
+  var DEF_MEDIA=["Indeed","engage","リクナビNEXT","マイナビ","doda","タウンワーク","直接応募","リファラル（紹介）"];
+  var DEF_JOBS=["営業","エンジニア","販売・接客","事務","製造・軽作業","医療・介護","ドライバー","その他"];
+  // 歩留ファネル（ホームのステージ）
+  var STAGES=[
+    {name:"応募",sub:"エントリー",key:"oubo"},
+    {name:"有効応募",sub:"精査OK",key:"yuko"},
+    {name:"LINE流入",sub:"LINE移行",key:"line"},
+    {name:"一次調整",sub:"日程調整",key:"ichiChosei"},
+    {name:"一次着座",sub:"一次面談実施",key:"ichiChakuza"},
+    {name:"二次調整",sub:"日程調整",key:"niChosei"},
+    {name:"二次着座",sub:"二次面談実施",key:"niChakuza"},
+    {name:"内定",sub:"オファー",key:"naitei"},
+    {name:"内定承諾",sub:"承諾",key:"shodaku"},
+    {name:"入職",sub:"入社",key:"nyusho"}
+  ];
+  var TKEYS=STAGES.map(function(s){return s.key;});
+  var REJ_TYPES=["不通","LINE移行なし","辞退","不採用"];
+  var REJ_CLASS={"不通":"futsu","LINE移行なし":"futsu","辞退":"jitai","不採用":"fusaiyo"};
+  // BPO_業務遂行フロー.xlsx を基にした参照表（項目・条件・担当）
+  var FLOW_ROLE_CODES="ABCDEF".split("");
+  var FLOW_DEFAULT_NAMES={A:"佐伯",B:"立花",C:"山内",D:"高間",E:"北村",F:"一次面談担当者"};
+  var FLOW_DEFAULT_COLORS={A:"#5B4FE9",B:"#2E7DE0",C:"#0FA981",D:"#D98A1F",E:"#D6488F",F:"#7C5CFC"};
+  var FLOW_PALETTE=["#5B4FE9","#2E7DE0","#0FA981","#D98A1F","#D6488F","#7C5CFC","#E8615A","#2FA98C","#C98A1B","#3B82C4"];
+  var FLOW_ROWS=[
+    {item:"求人制作",cond:"",owner:"A"},
+    {item:"応募",cond:"",owner:"A"},
+    {item:"応募対応（電話感想ヒアリング・懸念払拭）",cond:"",owner:"A"},
+    {item:"公式LINE対応",cond:"",owner:"B（A）"},
+    {item:"一次面接",cond:"報酬金額の提示",owner:"B（A）"},
+    {item:"面談メモシステム",cond:"会社説明",owner:"B（A）"},
+    {item:"採用連絡　※公式LINE経由",cond:"",owner:"一次面談担当者※基本B"},
+    {item:"採用カンバンステータス変更",cond:"LINE移行",owner:"一次面談担当者※基本B"},
+    {item:"今後のフロー・スケジュールの簡易説明",cond:"（役）面談調整中",owner:"一次面談担当者※基本B"},
+    {item:"役員面談",cond:"（役）合格",owner:"C"},
+    {item:"今後のフロー・スケジュールの簡易説明",cond:"オファー面談調整中",owner:"C"},
+    {item:"オファー面談（提案先3つ）",cond:"",owner:"D（A）※一次面談者同席基本"},
+    {item:"クライアント面談対策",cond:"オファー面談承諾",owner:"D（A）※一次面談者同席基本"},
+    {item:"クライアント面談①",cond:"",owner:"一次面談者（D）"},
+    {item:"クライアント面談③",cond:"内定",owner:"一次面談者（D）"},
+    {item:"クライアント面談②",cond:"Day 0",owner:"一次面談者（D）"},
+    {item:"入職",cond:"Day 1/ 入職",owner:"一次面談者（D）"},
+    {item:"入職後のフォロー（契約）",cond:"Day 1〜Day3",owner:"E（C、D）"},
+    {item:"入職後のフォロー（稼働）",cond:"Day 1〜Day 7〜Day 31",owner:"一次面談者"},
+    {item:"ステータス変更・後追い",cond:"※退職/辞退/連絡途絶はステータス：クローズド",owner:"B"}
+  ];
+  var KEY="ats_v5";
+
+  function today(){var d=new Date();d.setHours(0,0,0,0);return d;}
+  function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function parse(s){if(!s)return null;var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
+  function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+  function daysBetween(a,b){return Math.round((a-b)/86400000);}
+  function fmt(s){var d=parse(s);if(!d)return"未設定";var wd=["日","月","火","水","木","金","土"][d.getDay()];return (d.getMonth()+1)+"/"+d.getDate()+"("+wd+")";}
+  function relLabel(s){var d=parse(s);if(!d)return"期日なし";var n=daysBetween(d,today());
+    if(n<0)return Math.abs(n)+"日 超過";if(n===0)return"今日まで";if(n===1)return"明日まで";return"あと"+n+"日";}
+  function stateOf(c){var s=c.due[c.stage];if(!s)return"none";var n=daysBetween(parse(s),today());
+    if(n<0)return"over";if(n<=1)return"soon";return"ok";}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m];});}
+  function pct(a,b){return b>0?Math.round(a/b*100)+"%":"–";}
+  function dot(kind){return '<span class="dot-ind d-'+kind+'"></span>';}
+  var ICON_DL='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11.5"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20.5h14"/></svg>';
+  var ICON_UL='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5"/><path d="M7 8.5l5-5 5 5"/><path d="M5 20.5h14"/></svg>';
+  var ICON_PHONE='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15.9 15.9 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.05-.24 9 9 0 0 0 2.81.45 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A16 16 0 0 1 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 9 9 0 0 0 .45 2.81 1 1 0 0 1-.25 1.05Z"/></svg>';
+  var ICON_EDIT='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="M15 5l4 4"/></svg>';
+  var ICON_X='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>';
+  function yen(n){return "¥"+(n||0).toLocaleString("ja-JP");}
+
+  var SUPABASE_URL="https://llgfjklkfuazivrbcspv.supabase.co";
+  var SUPABASE_KEY="sb_publishable_qqWhrlJkkwvMEXUtdgVbbg_qYejJlP7";
+  var sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  var data=seed();ensureData();
+  var saveTimer=null,pendingRemote=null;
+  function save(){clearTimeout(saveTimer);saveTimer=setTimeout(pushToSupabase,450);}
+  function pushToSupabase(){
+    sbClient.from("app_state").update({data:data,updated_at:new Date().toISOString()}).eq("id",1).then(function(res){
+      if(res.error)console.error("save failed",res.error);
+    });
+  }
+  function applyRemote(newData){
+    var ae=document.activeElement,tag=ae&&ae.tagName;
+    if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"){pendingRemote=newData;return;}
+    data=newData;ensureData();render();
+  }
+  document.addEventListener("blur",function(){
+    if(pendingRemote){var nd=pendingRemote;pendingRemote=null;data=nd;ensureData();render();}
+  },true);
+  function subscribeRealtime(){
+    sbClient.channel("app_state_changes")
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"app_state",filter:"id=eq.1"},function(payload){
+        applyRemote(payload.new.data);
+      }).subscribe();
+  }
+  function showBoot(msg){
+    var el=document.getElementById("boot-screen");
+    if(el)el.querySelector(".boot-msg").textContent=msg;
+  }
+  function hideBoot(){var el=document.getElementById("boot-screen");if(el)el.remove();}
+  async function initApp(){
+    try{
+      var res=await sbClient.from("app_state").select("*").eq("id",1).maybeSingle();
+      if(res.error)throw res.error;
+      if(!res.data){
+        var ins=await sbClient.from("app_state").insert({id:1,data:data});
+        if(ins.error)throw ins.error;
+      }else{
+        data=res.data.data;ensureData();
+      }
+      spJob.refresh();spMedia.refresh();spCa.refresh();
+      hideBoot();render();maybeNotify();subscribeRealtime();
+    }catch(e){
+      console.error(e);
+      showBoot("読み込みに失敗しました。Supabaseの設定（URL / キー / テーブル）を確認してください。");
+    }
+  }
+  function seed(){
+    var y=2026;
+    function d(m,day){return y+"-"+String(m).padStart(2,"0")+"-"+String(day).padStart(2,"0");}
+    function c(id,name,stage,ca,dueOff,media,phone,job,company,applied){
+      var due={};if(dueOff!=null)due[stage]=iso(addDays(today(),dueOff));
+      return {id:id,name:name,stage:stage,ca:ca||"",due:due,media:media||"",phone:phone||"",job:job||"",
+        company:company||"",applied:applied,notes:"",status:"active"};
+    }
+    var items=[
+      c(1,"田中 健太",0,"",3,"Indeed","090-1000-0001","販売・接客","",d(8,9)),
+      c(2,"小林 直樹",1,"",0,"engage","090-1000-0002","事務","",d(8,9)),
+      c(3,"鈴木 一郎",2,"A",-1,"リクナビNEXT","090-1000-0003","エンジニア","",d(8,8)),
+      c(4,"高橋 美咲",3,"",-2,"マイナビ","090-1000-0004","営業","",d(8,7)),
+      c(5,"佐藤 花子",4,"B",1,"Indeed","090-1000-0005","営業","",d(8,5)),
+      c(6,"吉田 涼",4,"B",4,"doda","090-1000-0006","エンジニア","",d(8,3)),
+      c(7,"渡辺 大輔",5,"C",0,"リファラル（紹介）","090-1000-0007","医療・介護","",d(8,6)),
+      c(8,"伊藤 さくら",6,"C",5,"タウンワーク","090-1000-0008","販売・接客","株式会社アルファ",d(8,2)),
+      c(9,"加藤 亮",7,"A",-1,"Indeed","090-1000-0009","営業","株式会社ベータ",d(8,1)),
+      c(10,"山本 陽平",8,"A",2,"doda","090-1000-0010","エンジニア","株式会社ガンマ",d(7,28)),
+      c(11,"中村 涼子",9,"C",4,"直接応募","090-1000-0011","事務","株式会社デルタ",d(7,20))
+    ];
+    function rej(id,name,rejStage,type,reason,media,phone,job,applied){
+      var o=c(id,name,rejStage,"",null,media,phone,job,"",applied);
+      o.status="rejected";o.rejStage=rejStage;o.rejType=type;o.rejReason=reason;o.rejDate=iso(addDays(today(),-2));return o;
+    }
+    items.push(rej(12,"松本 健",3,"辞退","他社で内定承諾のため辞退","タウンワーク","090-2000-0001","ドライバー",d(8,4)));
+    items.push(rej(13,"井上 拓也",5,"不採用","スキル要件に不一致","マイナビ","090-2000-0002","エンジニア",d(7,30)));
+    items.push(rej(14,"木村 彩",1,"辞退","連絡つかず","engage","090-2000-0003","事務",d(8,6)));
+    return {seq:14,items:items};
+  }
+  function ensureData(){
+    if(!Array.isArray(data.people)){
+      var old=data.people||{};
+      data.people=FIXED.map(function(f){return {id:f.id,name:(old[f.id]&&old[f.id].name)||f.id,color:f.color,fixed:true};});
+    }
+    if(data.peopleSeq==null)data.peopleSeq=0;
+    if(!data.lists)data.lists={};
+    if(!data.lists.media)data.lists.media=DEF_MEDIA.slice();
+    if(!data.lists.jobs)data.lists.jobs=DEF_JOBS.slice();
+    if(!data.settings)data.settings={};
+    var s=data.settings;
+    if(!data.monthlyTargets)data.monthlyTargets={};
+    if(!Array.isArray(data.periods)){
+      data.periods=[{id:"per1",name:(s.period?s.period+"期":"7期"),start:s.rangeStart||"2026-07",end:s.rangeEnd||"2026-08"}];
+      data.periodSeq=1;
+      var legacyT=s.targets||{oubo:150,yuko:75,line:60,ichiChosei:48,ichiChakuza:35,niChosei:15,niChakuza:12,naitei:10,shodaku:8,nyusho:5,jitai:15,fusaiyo:15};
+      var legacyB=(s.budget!=null?s.budget:500000);
+      var ms=monthsBetween(data.periods[0].start,data.periods[0].end)||["2026-08"];
+      ms.forEach(function(ym){data.monthlyTargets[ym]=splitTargets(legacyT,legacyB,ms.length);});
+    }
+    // 旧バージョン（期ごとに1つの目標/予算）からの移行：月ごとに均等配分
+    data.periods.forEach(function(p){
+      if(p.targets||p.budget!=null){
+        var ms=monthsBetween(p.start,p.end);
+        ms.forEach(function(ym){if(!data.monthlyTargets[ym])data.monthlyTargets[ym]=splitTargets(p.targets||newTargets(),p.budget||0,ms.length||1);});
+        delete p.targets;delete p.budget;
+      }
+    });
+    if(data.periodSeq==null)data.periodSeq=data.periods.length;
+    if(!s.activePeriod||!data.periods.some(function(p){return p.id===s.activePeriod;}))s.activePeriod=data.periods[0].id;
+    if(s.activeMonth==null)s.activeMonth="";
+    if(s.notify==null)s.notify=false;
+    if(s.lastNotifyDate==null)s.lastNotifyDate="";
+    if(!data.flowNames)data.flowNames=Object.assign({},FLOW_DEFAULT_NAMES);
+    if(!data.flowColors)data.flowColors=Object.assign({},FLOW_DEFAULT_COLORS);
+    if(!data.flowRows)data.flowRows=FLOW_ROWS.map(function(r){return {item:r.item,cond:r.cond,owner:r.owner};});
+    if(s.monthlyFrom==null){var pm=prevMonthYM();s.monthlyFrom=pm;s.monthlyTo=pm;}
+  }
+  function splitTargets(t,budget,n){var o={budget:Math.round((budget||0)/n)};
+    TKEYS.concat(["jitai","fusaiyo"]).forEach(function(k){o[k]=Math.round((t[k]||0)/n);});return o;}
+  function activePeriod(){var id=data.settings.activePeriod;for(var i=0;i<data.periods.length;i++)if(data.periods[i].id===id)return data.periods[i];return data.periods[0];}
+  function newTargets(){return {oubo:0,yuko:0,line:0,ichiChosei:0,ichiChakuza:0,niChosei:0,niChakuza:0,naitei:0,shodaku:0,nyusho:0,jitai:0,fusaiyo:0};}
+  function newTargetsFull(){var o=newTargets();o.budget=0;o.spend=0;return o;}
+  function monthTargets(ym){return data.monthlyTargets[ym]||null;}
+  function ensureMonthTargets(ym){if(!data.monthlyTargets[ym])data.monthlyTargets[ym]=newTargetsFull();return data.monthlyTargets[ym];}
+  function aggregateTargets(months){var out=newTargetsFull();months.forEach(function(ym){var t=data.monthlyTargets[ym];if(!t)return;
+    Object.keys(out).forEach(function(k){out[k]+=(t[k]||0);});});return out;}
+  function addPeriod(){data.periodSeq++;var id="per"+data.periodSeq;
+    data.periods.push({id:id,name:data.periods.length+"期",start:"2026-01",end:"2026-06"});return id;}
+  function monthsBetween(start,end){if(!start||!end)return [];var a=start.split("-"),b=end.split("-");
+    var y=+a[0],m=+a[1],ey=+b[0],em=+b[1],out=[];var guard=0;
+    while((y<ey||(y===ey&&m<=em))&&guard<120){out.push(y+"-"+String(m).padStart(2,"0"));m++;if(m>12){m=1;y++;}guard++;}return out;}
+  function prevMonthYM(){var d=today();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+  function ymLabel(ym){if(!ym)return "—";var p=ym.split("-");return p[0]+"年"+(+p[1])+"月";}
+
+  function P(id){for(var i=0;i<data.people.length;i++)if(data.people[i].id===id)return data.people[i];return null;}
+  function pname(id){var p=P(id);return p?p.name:(id||"未割当");}
+  function pcolor(id){var p=P(id);return p?p.color:"var(--faint)";}
+  function pinit(id){var n=id?pname(id):"";return n?n.charAt(0):"未";}
+  function av(id,cls){var none=!id||!P(id);return '<span class="'+(cls||"av")+(none?" none":"")+'" style="'+(none?"":"background:"+pcolor(id))+'">'+esc(pinit(id))+'</span>';}
+  function addPerson(name){
+    data.peopleSeq++;var id="P"+data.peopleSeq;var used=data.people.length-FIXED.length;
+    var color=EXTRA_COLORS[((used%EXTRA_COLORS.length)+EXTRA_COLORS.length)%EXTRA_COLORS.length];
+    data.people.push({id:id,name:name||("担当"+id),color:color,fixed:false});return id;
+  }
+
+  var filter="all",stageFilter="all",monthFilter="all",earlyCollapsed=true,view="active",justDragged=false,screen="home",q="";
+  var EARLY_STAGES=5; // 応募〜一次着座＝担当が付く前の初期対応。それ以降(二次調整〜入職)がメインレンジ
+  function matchesMonth(c){return monthFilter==="all"||(c.applied&&c.applied.slice(0,7)===monthFilter);}
+  function distinctAppliedMonths(){var s={};data.items.forEach(function(c){if(c.applied)s[c.applied.slice(0,7)]=true;});return Object.keys(s).sort();}
+  function matchesQ(c){if(!q)return true;var s=q.toLowerCase();
+    return [c.name,c.job,c.media,c.company,c.phone,c.ca?pname(c.ca):""].some(function(v){return String(v||"").toLowerCase().indexOf(s)>-1;});}
+
+  function render(){
+    document.getElementById("today").textContent=fmt(iso(today()));
+    var active=data.items.filter(function(c){return c.status!=="rejected";});
+    var rejected=data.items.filter(function(c){return c.status==="rejected";});
+
+    var over=0,soon=0;
+    active.forEach(function(c){var s=stateOf(c);if(s==="over")over++;else if(s==="soon")soon++;});
+    document.getElementById("s-over").textContent=over;
+    document.getElementById("s-soon").textContent=soon;
+    document.getElementById("s-active").textContent=active.length;
+
+    var by={};data.people.forEach(function(p){by[p.id]=0;});by["_none"]=0;
+    active.forEach(function(c){if(stateOf(c)==="over"){var o=c.ca||"_none";if(by[o]!=null)by[o]++;else by[o]=1;}});
+    var chips=data.people.map(function(p){var n=by[p.id]||0;return {id:p.id,name:p.name,n:n};});
+    if(active.some(function(c){return !c.ca;}))chips.push({id:"_none",name:"未割当",n:by["_none"]||0});
+    document.getElementById("owners").innerHTML=chips.map(function(p){
+      var clr=p.n===0;return '<span class="ochip'+(clr?" clear":"")+'">'+av(p.id==="_none"?"":p.id)+' <span>'+esc(p.name)+' '+(clr?"順調":"遅延 <b>"+p.n+"</b>")+'</span></span>';
+    }).join("");
+
+    document.getElementById("vc-active").textContent=active.length;
+    document.getElementById("vc-rej").textContent=rejected.length;
+    [].forEach.call(document.getElementById("viewtabs").children,function(b){b.setAttribute("aria-pressed",b.dataset.v===view);});
+
+    var fl=document.getElementById("filters");
+    var fpeople=data.people.slice();
+    fl.innerHTML='<button class="fchip" data-f="all" aria-pressed="'+(filter==="all")+'">全員</button>'+
+      fpeople.map(function(p){return '<button class="fchip" data-f="'+p.id+'" aria-pressed="'+(filter===p.id)+'">'+esc(p.name)+'</button>';}).join("")+
+      '<button class="fchip" data-f="_none" aria-pressed="'+(filter==="_none")+'">未割当</button>';
+    if(!fl.dataset.bound){fl.dataset.bound="1";
+      fl.addEventListener("click",function(e){var b=e.target.closest(".fchip");if(!b)return;filter=b.dataset.f;render();});
+    }
+
+    var sfl=document.getElementById("stage-filters");
+    sfl.innerHTML='<button class="fchip" data-sf="all" aria-pressed="'+(stageFilter==="all")+'">全ステージ</button>'+
+      STAGES.map(function(st,si){return '<button class="fchip" data-sf="'+si+'" aria-pressed="'+(stageFilter===String(si))+'">'+esc(st.name)+'</button>';}).join("");
+    if(!sfl.dataset.bound){sfl.dataset.bound="1";
+      sfl.addEventListener("click",function(e){var b=e.target.closest(".fchip");if(!b)return;stageFilter=b.dataset.sf;render();});
+    }
+
+    var msel=document.getElementById("month-filter");
+    var months=distinctAppliedMonths();
+    msel.innerHTML='<option value="all">すべての月</option>'+months.map(function(ym){
+      var l=ym.split("-")[0]+"年"+(+ym.split("-")[1])+"月";
+      return '<option value="'+ym+'"'+(ym===monthFilter?" selected":"")+'>'+l+'</option>';}).join("");
+    if(monthFilter!=="all"&&months.indexOf(monthFilter)<0)monthFilter="all";
+    msel.value=monthFilter;
+    if(!msel.dataset.bound){msel.dataset.bound="1";
+      msel.addEventListener("change",function(){monthFilter=this.value;render();});
+    }
+
+    var board=document.getElementById("board");
+    if(view==="rejected"){
+      board.classList.add("single");
+      sfl.style.display="none";
+      var rlist=rejected.filter(matchesQ);
+      board.innerHTML=rlist.length?'<div class="rejlist">'+rlist.map(rejCardHTML).join("")+'</div>'
+        :'<div class="empty" style="margin:24px 0">該当なし</div>';
+    }else{
+      board.classList.remove("single");
+      sfl.style.display="";
+      // 応募月フィルターは「初期対応（応募〜一次着座）」だけが対象。二次調整以降は月をまたいで最後まで追う。
+      var listBase=active.filter(function(c){return (filter==="all"||(filter==="_none"?!c.ca:c.ca===filter))&&matchesQ(c);});
+      function laneHTML(st,si,applyMonth){
+        var pool=applyMonth?listBase.filter(matchesMonth):listBase;
+        var cards=pool.filter(function(c){return c.stage===si;});
+        var warn=cards.filter(function(c){return stateOf(c)==="over";}).length;
+        var body=cards.length?cards.map(cardHTML).join(""):'<div class="empty">該当なし</div>';
+        return {html:'<div class="lane"><div class="lanehead"><span class="idx">'+(si+1)+'</span>'+
+          '<div><div class="ct">'+st.name+'</div><div class="sub">'+st.sub+'</div></div>'+
+          '<span class="cnt">'+cards.length+'件'+(warn?' · <span class="warn">'+dot("over")+warn+'</span>':'')+'</span></div>'+
+          '<div class="drop" data-stage="'+si+'">'+body+'</div></div>',count:cards.length,warn:warn};
+      }
+      if(stageFilter!=="all"){
+        var si1=+stageFilter;board.innerHTML=laneHTML(STAGES[si1],si1,si1<EARLY_STAGES).html;
+      }else{
+        var early=[],earlyCount=0,earlyWarn=0;
+        for(var i=0;i<EARLY_STAGES;i++){var r=laneHTML(STAGES[i],i,true);early.push(r.html);earlyCount+=r.count;earlyWarn+=r.warn;}
+        var main=[];for(var j=EARLY_STAGES;j<STAGES.length;j++)main.push(laneHTML(STAGES[j],j,false).html);
+        board.innerHTML='<div class="early-group">'+
+          '<button class="early-toggle" id="early-toggle" aria-expanded="'+(!earlyCollapsed)+'">'+
+            '<span class="et-icon">▶</span>'+
+            '<span class="et-label">初期対応（応募〜一次着座）</span>'+
+            '<span class="et-count">'+earlyCount+'件'+(earlyWarn?' · <span class="warn">'+dot("over")+earlyWarn+'</span>':'')+'</span>'+
+            '<span class="et-action">'+(earlyCollapsed?"タップで表示":"タップで閉じる")+'</span>'+
+          '</button>'+
+          (earlyCollapsed?'':'<div class="early-lanes">'+early.join("")+'</div>')+
+          '</div>'+main.join("");
+      }
+    }
+    board.querySelectorAll(".early-toggle").forEach(function(el){
+      el.addEventListener("click",function(){earlyCollapsed=!earlyCollapsed;render();});
+    });
+    board.querySelectorAll(".card").forEach(function(el){
+      el.addEventListener("click",function(){if(justDragged)return;openSheet(+el.dataset.id);});
+    });
+
+    var isA=screen==="analytics",isF=screen==="flow",isOther=isA||isF;
+    document.getElementById("home-dash").hidden=isOther;
+    document.getElementById("board").style.display=isOther?"none":"";
+    document.getElementById("analytics").hidden=!isA;
+    document.getElementById("flow").hidden=!isF;
+    document.getElementById("fab").style.display=isOther?"none":"";
+    document.getElementById("filters").style.display=(isOther||view==="rejected")?"none":"";
+    document.getElementById("stage-filters").style.display=(isOther||view==="rejected")?"none":"";
+    document.getElementById("screen-title").textContent=isA?"分析":isF?"業務フロー":"BPO採用管理";
+    [].forEach.call(document.querySelectorAll("#drawer .mi"),function(b){
+      b.setAttribute("aria-current",(b.dataset.s==="home"&&!isOther)||(b.dataset.s==="analytics"&&isA)||(b.dataset.s==="flow"&&isF));});
+    if(isA)renderAnalytics();
+    if(isF)renderFlow();
+  }
+
+  function cardHTML(c){
+    var s=stateOf(c),owner=c.ca,done=c.stage===STAGES.length-1;
+    var dueTxt=c.due[c.stage]?relLabel(c.due[c.stage]):"期日なし";
+    return '<button class="card s-'+s+(done?' done':'')+'" data-id="'+c.id+'">'+
+      '<span class="stripe"></span>'+
+      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+av(owner)+'</div>'+
+      (c.job?'<div class="cjob">'+esc(c.job)+'</div>':'')+
+      (c.media?'<div class="cmedia">'+esc(c.media)+'</div>':'')+
+      '<div class="meta">'+
+        '<span class="due s-'+s+'">'+(s==="over"?dot("over"):s==="soon"?dot("soon"):s==="ok"?dot("ok"):"")+dueTxt+'</span>'+
+        '<span class="prog"><span class="bar"><i style="width:'+((c.stage+1)/STAGES.length*100)+'%"></i></span>'+(c.stage+1)+'/'+STAGES.length+'</span>'+
+      '</div></button>';
+  }
+  function rejCardHTML(c){
+    var tg=[c.job,c.media,c.phone].filter(Boolean).map(function(x){return '<span class="tag">'+esc(x)+'</span>';}).join("");
+    var type=c.rejType||"見送り",cl=REJ_CLASS[type]||"jitai";
+    return '<button class="card" data-id="'+c.id+'">'+
+      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+av(c.ca)+'</div>'+
+      '<div><span class="rtag '+cl+'">'+esc(type)+'</span></div>'+
+      '<div class="rej-meta">'+fmt(c.rejDate)+' ・ '+STAGES[c.rejStage||0].name+'まで到達</div>'+
+      '<div class="rej-reason">'+esc(c.rejReason||"理由未記入")+'</div>'+
+      (tg?'<div class="tags">'+tg+'</div>':'')+'</button>';
+  }
+
+  // ---- detail sheet ----
+  var cur=null;
+  function openSheet(id){cur=data.items.filter(function(c){return c.id===id;})[0];if(!cur)return;drawSheet();openS("sheet");}
+  function drawStg(){var c=cur,st=STAGES[c.stage];
+    document.getElementById("sh-stg").innerHTML='<span class="pill">'+(c.stage+1)+'/'+STAGES.length+' '+st.name+'</span><span>'+st.sub+'</span>'+
+      '<span style="margin-left:auto;color:var(--muted)">担当 '+esc(c.ca?pname(c.ca):"未割当")+'</span>';}
+  function drawSheet(){var c=cur,rej=c.status==="rejected";
+    document.getElementById("sh-av").outerHTML='<span class="av'+((!c.ca||!P(c.ca))?" none":"")+'" id="sh-av" style="'+((!c.ca||!P(c.ca))?"":"background:"+pcolor(c.ca))+'">'+esc(pinit(c.ca))+'</span>';
+    document.getElementById("sh-name").textContent=c.name;
+    drawStg();
+    var parts=[];
+    if(c.phone)parts.push('<a class="ct-phone" href="tel:'+esc(c.phone).replace(/[^0-9+]/g,"")+'">'+ICON_PHONE+esc(c.phone)+'</a>');
+    if(c.job)parts.push('<span class="tag job">'+esc(c.job)+'</span>');
+    if(c.media)parts.push('<span class="tag">'+esc(c.media)+'</span>');
+    if(c.company)parts.push('<span class="tag">屋号 '+esc(c.company)+'</span>');
+    if(c.applied)parts.push('<span class="tag">応募 '+fmt(c.applied)+'</span>');
+    document.getElementById("sh-contact").innerHTML=parts.join("");
+    document.getElementById("active-ui").hidden=rej;
+    document.getElementById("rejected-ui").hidden=!rej;
+    document.getElementById("reject-box").hidden=true;
+    if(rej){
+      document.getElementById("rej-banner").innerHTML='<b>'+esc(c.rejType||"見送り")+'</b>です。<br>理由：'+esc(c.rejReason||"未記入")+
+        '<br>時期：'+fmt(c.rejDate)+' ／ '+STAGES[c.rejStage||0].name+'まで到達';
+      return;
+    }
+    var casel=document.getElementById("sh-ca");
+    casel.innerHTML='<option value="">未割当</option>'+data.people.map(function(p){return '<option value="'+p.id+'"'+(p.id===c.ca?" selected":"")+'>'+esc(p.name)+'</option>';}).join("");
+    casel.value=c.ca||"";
+    casel.onchange=function(){c.ca=casel.value;save();drawStg();render();
+      document.getElementById("sh-av").outerHTML='<span class="av'+((!c.ca||!P(c.ca))?" none":"")+'" id="sh-av" style="'+((!c.ca||!P(c.ca))?"":"background:"+pcolor(c.ca))+'">'+esc(pinit(c.ca))+'</span>';};
+    var di=document.getElementById("due-input");di.value=c.due[c.stage]||"";
+    di.oninput=function(){c.due[c.stage]=di.value;save();render();};
+    var nt=document.getElementById("notes");nt.value=c.notes||"";nt.oninput=function(){c.notes=nt.value;save();};
+    updateMove();
+  }
+  function updateMove(){var c=cur,last=c.stage===STAGES.length-1;
+    var nb=document.getElementById("next-btn");
+    nb.textContent=last?"🎉 入職まで完了":"次のステージへ →";nb.disabled=last;
+    document.getElementById("back-btn").disabled=c.stage===0;
+    document.getElementById("back-btn").style.opacity=c.stage===0?.4:1;
+    document.getElementById("move-hint").textContent=last?"入職（最終ステージ）です":"次："+STAGES[c.stage+1].name;
+  }
+  function moveTo(c,stage){c.stage=stage;if(!c.due[stage])c.due[stage]=iso(addDays(today(),3));save();}
+  document.getElementById("next-btn").addEventListener("click",function(){
+    var c=cur;if(c.stage>=STAGES.length-1)return;moveTo(c,c.stage+1);drawSheet();render();
+    var de=document.getElementById("due-edit");de.classList.remove("flash");void de.offsetWidth;de.classList.add("flash");
+    document.querySelector("#sheet .sh-body").scrollTop=0;
+  });
+  document.getElementById("back-btn").addEventListener("click",function(){var c=cur;if(c.stage===0)return;c.stage--;save();drawSheet();render();});
+  document.getElementById("rb-types").innerHTML=REJ_TYPES.map(function(t,i){
+    return '<button class="btn'+(i>=2?" primary danger":"")+'" data-rt="'+t+'">'+esc(t)+'</button>';}).join("");
+  document.getElementById("reject-open").addEventListener("click",function(){var rb=document.getElementById("reject-box");rb.hidden=false;
+    var r=document.getElementById("reject-reason");r.value="";r.focus();});
+  document.getElementById("reject-cancel").addEventListener("click",function(){document.getElementById("reject-box").hidden=true;});
+  function doReject(type){var c=cur;c.status="rejected";c.rejType=type;c.rejReason=document.getElementById("reject-reason").value.trim();
+    c.rejStage=c.stage;c.rejDate=iso(today());save();closeS();view="rejected";render();}
+  document.getElementById("rb-types").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;doReject(b.dataset.rt);});
+  document.getElementById("restore-btn").addEventListener("click",function(){var c=cur;c.status="active";
+    delete c.rejReason;delete c.rejType;delete c.rejStage;delete c.rejDate;
+    if(!c.due[c.stage])c.due[c.stage]=iso(addDays(today(),3));save();drawSheet();view="active";render();});
+
+  // ---- select+add ----
+  function selPlus(el,opts){
+    var state={value:opts.value||""};
+    function render(){
+      var options=opts.options();var head=(opts.emptyLabel!=null)?[{value:"",label:opts.emptyLabel}]:[];
+      var all=head.concat(options);
+      el.innerHTML='<div class="sp-row"><select class="sp-select"></select><button type="button" class="sp-add" aria-label="追加">＋</button></div>'+
+        '<div class="sp-new" hidden><input placeholder="'+esc(opts.newPlaceholder||"新しく追加")+'" autocomplete="off"><button type="button" class="btn sp-newok">追加</button></div>';
+      var sel=el.querySelector(".sp-select");
+      sel.innerHTML=all.map(function(o){return '<option value="'+esc(o.value)+'"'+(o.value===state.value?" selected":"")+'>'+esc(o.label)+'</option>';}).join("");
+      if(all.length&&all.map(function(o){return o.value;}).indexOf(state.value)<0){state.value=all[0].value;sel.value=state.value;}
+      sel.onchange=function(){state.value=sel.value;};
+      el.querySelector(".sp-add").onclick=function(){var n=el.querySelector(".sp-new");n.hidden=false;n.querySelector("input").focus();};
+      el.querySelector(".sp-newok").onclick=function(){var inp=el.querySelector(".sp-new input");var t=inp.value.trim();if(!t)return;var v=opts.onAddNew(t);state.value=v;render();};
+    }
+    render();
+    return {get value(){return state.value;},set value(v){state.value=v;render();},refresh:render};
+  }
+  var spJob=selPlus(document.getElementById("sp-job"),{options:function(){return data.lists.jobs.map(function(x){return {value:x,label:x};});},
+    emptyLabel:"（未選択）",newPlaceholder:"応募職種を追加",onAddNew:function(t){if(data.lists.jobs.indexOf(t)<0)data.lists.jobs.push(t);save();return t;}});
+  var spMedia=selPlus(document.getElementById("sp-media"),{options:function(){return data.lists.media.map(function(x){return {value:x,label:x};});},
+    emptyLabel:"（未選択）",newPlaceholder:"媒体を追加",onAddNew:function(t){if(data.lists.media.indexOf(t)<0)data.lists.media.push(t);save();return t;}});
+  var spCa=selPlus(document.getElementById("sp-ca"),{value:"",emptyLabel:"未割当",
+    options:function(){return data.people.map(function(p){return {value:p.id,label:p.name};});},
+    newPlaceholder:"担当者の名前を追加",onAddNew:function(t){var id=addPerson(t);save();render();return id;}});
+
+  function fillStageSelect(){document.getElementById("add-stage").innerHTML=STAGES.map(function(s,i){return '<option value="'+i+'">'+(i+1)+'. '+s.name+'</option>';}).join("");}
+  fillStageSelect();
+  document.getElementById("fab").addEventListener("click",function(){
+    ["add-name","add-phone","add-company"].forEach(function(id){document.getElementById(id).value="";});
+    document.getElementById("add-applied").value=iso(today());
+    document.getElementById("add-due").value=iso(addDays(today(),3));
+    document.getElementById("add-stage").value="0";
+    spJob.value="";spMedia.value="";spCa.value="";spJob.refresh();spMedia.refresh();spCa.refresh();
+    openS("addsheet");setTimeout(function(){document.getElementById("add-name").focus();},260);
+  });
+  document.getElementById("add-save").addEventListener("click",function(){
+    var name=document.getElementById("add-name").value.trim();if(!name){document.getElementById("add-name").focus();return;}
+    var stage=+document.getElementById("add-stage").value;
+    var c={id:++data.seq,name:name,stage:stage,ca:spCa.value||"",due:{},notes:"",status:"active",
+      applied:document.getElementById("add-applied").value,job:spJob.value||"",media:spMedia.value||"",
+      phone:document.getElementById("add-phone").value.trim(),company:document.getElementById("add-company").value.trim()};
+    c.due[stage]=document.getElementById("add-due").value;
+    data.items.push(c);save();render();closeS();
+  });
+
+  // ---- search + view tabs + menu ----
+  document.getElementById("search-input").addEventListener("input",function(){q=this.value.trim();render();});
+  document.getElementById("viewtabs").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;view=b.dataset.v;render();});
+  document.getElementById("analytics").addEventListener("change",function(e){
+    var inp=e.target.closest(".inline-budget");if(!inp)return;
+    ensureMonthTargets(inp.dataset.ym)[inp.dataset.k]=+inp.value||0;save();renderAnalytics();
+  });
+  document.getElementById("menu-btn").addEventListener("click",function(){openS("drawer");});
+  document.getElementById("drawer").addEventListener("click",function(e){var b=e.target.closest(".mi");if(!b)return;var s=b.dataset.s;
+    if(s==="settings"){closeS();openSettings();return;}screen=s;closeS();render();});
+
+  // ---- settings ----
+  function usedCA(){var s={};data.items.forEach(function(c){if(c.ca)s[c.ca]=true;});return s;}
+  function renderSetPeople(){
+    var used=usedCA();
+    document.getElementById("set-people").innerHTML=data.people.map(function(p){
+      var right=used[p.id]?'<span class="used">使用中</span>':'<button type="button" class="rm" data-id="'+p.id+'" aria-label="削除">✕</button>';
+      return '<div class="setrow">'+av(p.id)+'<div class="rdwrap"><input class="setname" data-id="'+p.id+'" value="'+esc(p.name)+'" autocomplete="off"><div class="rd">担当CA</div></div>'+right+'</div>';
+    }).join("");
+  }
+  function renderSetList(elId,arr){document.getElementById(elId).innerHTML=arr.length?arr.map(function(x,i){
+    return '<span class="t">'+esc(x)+'<button type="button" data-i="'+i+'" aria-label="削除">✕</button></span>';}).join(""):'<span class="rd">（なし）</span>';}
+  var TARGET_FIELDS=[["oubo","応募数"],["yuko","有効応募"],["line","LINE流入"],["ichiChosei","一次調整"],["ichiChakuza","一次着座"],
+    ["niChosei","二次調整"],["niChakuza","二次着座"],["naitei","内定"],["shodaku","内定承諾"],["nyusho","入職"],["jitai","辞退"],["fusaiyo","不採用"]];
+  var tgtMonth=null;
+  function defaultTgtMonth(){var per=activePeriod();var ms=monthsBetween(per.start,per.end);
+    return ms.length?ms[ms.length-1]:iso(today()).slice(0,7);}
+  function renderTargets(){
+    if(!tgtMonth)tgtMonth=defaultTgtMonth();
+    document.getElementById("tgt-month").value=tgtMonth;
+    var t=ensureMonthTargets(tgtMonth);
+    document.getElementById("set-targets").innerHTML=
+      '<div class="minif"><label>広告予算(円)</label><input type="number" min="0" data-k="budget" value="'+(t.budget||0)+'"></div>'+
+      TARGET_FIELDS.map(function(f){
+        return '<div class="minif"><label>'+f[1]+'</label><input type="number" min="0" data-k="'+f[0]+'" value="'+(t[f[0]]||0)+'"></div>';}).join("");
+    document.querySelectorAll("#set-targets input").forEach(function(inp){
+      inp.addEventListener("change",function(){ensureMonthTargets(tgtMonth)[inp.dataset.k]=+inp.value||0;save();render();});});
+  }
+  document.getElementById("tgt-month").addEventListener("change",function(){tgtMonth=this.value||defaultTgtMonth();renderTargets();});
+  function renderPeriods(){
+    var act=data.settings.activePeriod;
+    document.getElementById("set-periods").innerHTML=data.periods.map(function(p){var on=p.id===act;
+      return '<div class="prow'+(on?' active':'')+'" data-id="'+p.id+'">'+
+        '<div class="prhead"><input class="pname" data-f="name" value="'+esc(p.name)+'" autocomplete="off">'+
+        '<button type="button" class="use'+(on?' on':'')+'" data-use>'+(on?'表示中':'表示')+'</button>'+
+        (data.periods.length>1?'<button type="button" class="rm" data-rm aria-label="削除">✕</button>':'')+'</div>'+
+        '<div class="pr3" style="grid-template-columns:1fr 1fr">'+
+          '<div class="minif"><label>開始月</label><input type="month" data-f="start" value="'+esc(p.start||"")+'"></div>'+
+          '<div class="minif"><label>終了月</label><input type="month" data-f="end" value="'+esc(p.end||"")+'"></div>'+
+        '</div></div>';
+    }).join("");
+  }
+  function openSettings(){
+    renderSetPeople();renderSetList("set-jobs",data.lists.jobs);renderSetList("set-media",data.lists.media);
+    renderPeriods();renderTargets();renderNotifyUI();
+    [].forEach.call(document.querySelectorAll("#stabs .stab"),function(x){x.setAttribute("aria-selected",x.dataset.p==="basic");});
+    ["basic","period","target"].forEach(function(id){document.getElementById("pane-"+id).hidden=(id!=="basic");});
+    openS("setsheet");
+  }
+  // ---- 通知（このブラウザを開いている間のみ届く） ----
+  function renderNotifyUI(){
+    var box=document.getElementById("set-notify"),note=document.getElementById("notify-note");
+    if(typeof Notification==="undefined"){
+      box.checked=false;box.disabled=true;note.textContent="このブラウザは通知に対応していません。";return;
+    }
+    box.disabled=false;box.checked=!!data.settings.notify&&Notification.permission==="granted";
+    if(Notification.permission==="denied")note.textContent="通知がブロックされています。ブラウザのサイト設定から通知を許可してください。";
+    else note.textContent="このブラウザでこのページを開くたびに、1日1回まで「遅延・要注意」の候補者をお知らせします。アプリを閉じている間は届きません（LINE/メール通知には別途サーバー連携が必要です）。";
+  }
+  document.getElementById("set-notify").addEventListener("change",function(){
+    var box=this;
+    if(box.checked){
+      if(typeof Notification==="undefined")return;
+      Notification.requestPermission().then(function(perm){
+        data.settings.notify=(perm==="granted");save();renderNotifyUI();if(perm==="granted")maybeNotify(true);
+      });
+    }else{data.settings.notify=false;save();renderNotifyUI();}
+  });
+  function computeAlerts(){
+    var over=[],soon=[];
+    data.items.forEach(function(c){if(c.status==="rejected")return;var s=stateOf(c);
+      if(s==="over")over.push(c);else if(s==="soon")soon.push(c);});
+    return {over:over,soon:soon};
+  }
+  function maybeNotify(force){
+    if(!data.settings.notify)return;
+    if(typeof Notification==="undefined"||Notification.permission!=="granted")return;
+    var todayStr=iso(today());
+    if(!force&&data.settings.lastNotifyDate===todayStr)return;
+    var al=computeAlerts();if(!al.over.length&&!al.soon.length)return;
+    var names=al.over.slice(0,3).map(function(c){return c.name;}).join("・");
+    var body="遅延 "+al.over.length+"件 ・ 要注意 "+al.soon.length+"件"+(names?"\n"+names+(al.over.length>3?" 他":""):"");
+    try{new Notification("BPO採用管理",{body:body});}catch(e){}
+    data.settings.lastNotifyDate=todayStr;save();
+  }
+  document.getElementById("stabs").addEventListener("click",function(e){var b=e.target.closest(".stab");if(!b)return;var p=b.dataset.p;
+    [].forEach.call(this.children,function(x){x.setAttribute("aria-selected",x===b);});
+    ["basic","period","target"].forEach(function(id){document.getElementById("pane-"+id).hidden=(id!==p);});
+    if(p==="target")renderTargets();if(p==="period")renderPeriods();});
+  document.getElementById("set-addperiod").addEventListener("click",function(){var id=addPeriod();data.settings.activePeriod=id;save();renderPeriods();renderTargets();render();});
+  document.getElementById("set-periods").addEventListener("click",function(e){var row=e.target.closest(".prow");if(!row)return;var id=row.dataset.id;
+    if(e.target.closest("[data-use]")){data.settings.activePeriod=id;save();renderPeriods();renderTargets();render();return;}
+    if(e.target.closest("[data-rm]")){data.periods=data.periods.filter(function(p){return p.id!==id;});
+      if(data.settings.activePeriod===id)data.settings.activePeriod=data.periods[0].id;save();renderPeriods();renderTargets();render();}});
+  document.getElementById("set-periods").addEventListener("change",function(e){var inp=e.target.closest("input");if(!inp)return;var row=inp.closest(".prow");if(!row)return;
+    var id=row.dataset.id,p=null;for(var i=0;i<data.periods.length;i++)if(data.periods[i].id===id)p=data.periods[i];if(!p)return;
+    var f=inp.dataset.f;p[f]=(f==="budget")?(+inp.value||0):inp.value;if(f==="name")renderPeriods();save();render();});
+  document.getElementById("menu-btn");
+  document.getElementById("set-addperson").addEventListener("click",function(){addPerson("新しい担当者");save();renderSetPeople();spCa.refresh();render();});
+  document.getElementById("set-people").addEventListener("click",function(e){var rm=e.target.closest(".rm");if(!rm)return;var id=rm.dataset.id;
+    data.people=data.people.filter(function(p){return p.id!==id;});save();renderSetPeople();spCa.refresh();render();});
+  document.getElementById("set-job-add").addEventListener("click",function(){var inp=document.getElementById("set-job-input");var t=inp.value.trim();if(!t)return;
+    if(data.lists.jobs.indexOf(t)<0)data.lists.jobs.push(t);inp.value="";save();renderSetList("set-jobs",data.lists.jobs);spJob.refresh();});
+  document.getElementById("set-jobs").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;data.lists.jobs.splice(+b.dataset.i,1);save();renderSetList("set-jobs",data.lists.jobs);spJob.refresh();});
+  document.getElementById("set-media-add").addEventListener("click",function(){var inp=document.getElementById("set-media-input");var t=inp.value.trim();if(!t)return;
+    if(data.lists.media.indexOf(t)<0)data.lists.media.push(t);inp.value="";save();renderSetList("set-media",data.lists.media);spMedia.refresh();});
+  document.getElementById("set-media").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;data.lists.media.splice(+b.dataset.i,1);save();renderSetList("set-media",data.lists.media);spMedia.refresh();});
+  document.getElementById("set-save").addEventListener("click",function(){
+    document.querySelectorAll("#set-people .setname").forEach(function(inp){var p=P(inp.dataset.id);if(p)p.name=inp.value.trim()||p.id;});
+    document.querySelectorAll("#set-periods .pname").forEach(function(inp){var id=inp.closest(".prow").dataset.id,p=null;
+      for(var i=0;i<data.periods.length;i++)if(data.periods[i].id===id)p=data.periods[i];if(p)p.name=inp.value.trim()||p.name;});
+    save();spCa.refresh();render();closeS();
+  });
+  document.getElementById("set-close").addEventListener("click",closeS);
+
+  // ---- analytics ----
+  function reached(c){return c.status==="rejected"?(c.rejStage||0):c.stage;}
+  function inRange(c){var p=activePeriod();if(!c.applied)return true;var m=c.applied.slice(0,7);
+    if(p.start&&m<p.start)return false;if(p.end&&m>p.end)return false;return true;}
+  function inMonth(c,ym){return c.applied&&c.applied.slice(0,7)===ym;}
+  function funnelCounts(pool){var cnt=[];for(var i=0;i<STAGES.length;i++){(function(i){cnt[i]=pool.filter(function(c){return reached(c)>=i;}).length;})(i);}return cnt;}
+  function kpi(cls,n,l){return '<div class="kpi '+cls+'"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>';}
+  function acard(title,sub,inner){return '<div class="acard"><h3>'+esc(title)+(sub?'<span class="sub">'+sub+'</span>':'')+'</h3>'+inner+'</div>';}
+  function bars(rows){if(!rows.length)return '<div class="aempty">データなし</div>';
+    var max=rows.reduce(function(m,r){return Math.max(m,r.value);},0)||1;
+    return rows.map(function(r){var od=r.over||0,main=r.value-od;
+      return '<div class="brow"><span class="bl">'+esc(r.label)+'</span><span class="bt"><i style="width:'+Math.round(main/max*100)+'%"></i>'+
+        (od?'<i class="over" style="width:'+Math.round(od/max*100)+'%"></i>':'')+'</span>'+
+        '<span class="bv">'+r.value+(od?' <span class="od">'+dot("over")+od+'</span>':'')+'</span></div>';}).join("");}
+  function countBy(arr,fn){var m={};arr.forEach(function(c){var k=fn(c);m[k]=(m[k]||0)+1;});
+    return Object.keys(m).map(function(k){return {label:k,value:m[k]};}).sort(function(a,b){return b.value-a.value;});}
+
+  function ftableHead(){
+    var head=['<th class="rowh"></th>','<th>広告予算</th>'];
+    STAGES.forEach(function(st,i){head.push('<th>'+st.name+(/数$/.test(st.name)?'':'数')+'</th>');
+      if(i>0)head.push('<th>'+st.name.replace(/数$/,'')+'率</th>');});
+    head.push('<th>全体入職率</th>','<th>辞退数</th>','<th>辞退率</th>','<th>不採用数</th>','<th>不採用率</th>');
+    return head;
+  }
+  // reverse=true means "少ない方が良い"（辞退・不採用など）
+  function achieveClass(actual,target,reverse){
+    if(target==null)return "";
+    if(!reverse&&target===0)return ""; // 目標未設定は判定なし
+    if(reverse)return actual<=target?"pos":"neg";
+    return actual>=target?"pos":"neg";
+  }
+  function ftableRowCells(counts,jit,fus,budgetCellHtml,cmp){
+    var cells=[budgetCellHtml];
+    for(var i=0;i<STAGES.length;i++){
+      var ccls=cmp?achieveClass(counts[i],cmp.counts[i],false):"";
+      cells.push('<td'+(ccls?' class="'+ccls+'"':'')+'>'+counts[i]+'</td>');
+      if(i>0){
+        var aR=counts[i-1]>0?counts[i]/counts[i-1]:null,tR=cmp&&cmp.counts[i-1]>0?cmp.counts[i]/cmp.counts[i-1]:null;
+        var rcls=(cmp&&aR!=null&&tR!=null)?achieveClass(aR,tR,false):"";
+        cells.push('<td class="rate'+(rcls?" "+rcls:"")+'">'+pct(counts[i],counts[i-1])+'</td>');
+      }
+    }
+    var aO=counts[0]>0?counts[STAGES.length-1]/counts[0]:null,tO=cmp&&cmp.counts[0]>0?cmp.counts[STAGES.length-1]/cmp.counts[0]:null;
+    var ocls=(cmp&&aO!=null&&tO!=null)?achieveClass(aO,tO,false):"";
+    cells.push('<td class="rate'+(ocls?" "+ocls:"")+'">'+pct(counts[STAGES.length-1],counts[0])+'</td>');
+    var jcls=cmp?achieveClass(jit,cmp.jit,true):"";
+    var aJR=counts[0]>0?jit/counts[0]:null,tJR=cmp&&cmp.counts[0]>0?cmp.jit/cmp.counts[0]:null;
+    var jrcls=(cmp&&aJR!=null&&tJR!=null)?achieveClass(aJR,tJR,true):"";
+    cells.push('<td'+(jcls?' class="'+jcls+'"':'')+'>'+jit+'</td>','<td class="rate'+(jrcls?" "+jrcls:"")+'">'+pct(jit,counts[0])+'</td>');
+    var fcls=cmp?achieveClass(fus,cmp.fus,true):"";
+    var aFR=counts[0]>0?fus/counts[0]:null,tFR=cmp&&cmp.counts[0]>0?cmp.fus/cmp.counts[0]:null;
+    var frcls=(cmp&&aFR!=null&&tFR!=null)?achieveClass(aFR,tFR,true):"";
+    cells.push('<td'+(fcls?' class="'+fcls+'"':'')+'>'+fus+'</td>','<td class="rate'+(frcls?" "+frcls:"")+'">'+pct(fus,counts[0])+'</td>');
+    return cells.join("");
+  }
+  function budgetStatic(v){return '<td>'+(v==null?'–':yen(v))+'</td>';}
+  function budgetInput(ym,key,v){return '<td><input type="number" min="0" class="inline-budget" data-ym="'+ym+'" data-k="'+key+'" value="'+(v||0)+'"></td>';}
+  // 辞退カウントは「不通・LINE移行なし・辞退」をまとめた数。不採用（会社都合NG）は別集計。
+  function jitFus(pool){return {jit:pool.filter(function(c){return c.status==="rejected"&&c.rejType!=="不採用";}).length,
+    fus:pool.filter(function(c){return c.status==="rejected"&&c.rejType==="不採用";}).length};}
+
+  function analysisScope(){
+    var per=activePeriod();var months=monthsBetween(per.start,per.end);
+    var selMonth=(data.settings.activeMonth&&months.indexOf(data.settings.activeMonth)>-1)?data.settings.activeMonth:"";
+    var t=selMonth?(monthTargets(selMonth)||newTargetsFull()):aggregateTargets(months);
+    var pool=selMonth?data.items.filter(function(c){return inMonth(c,selMonth);}):data.items.filter(inRange);
+    return {per:per,months:months,selMonth:selMonth,t:t,pool:pool};
+  }
+  function funnelTable(sc){
+    var t=sc.t,pool=sc.pool;
+    var ac=funnelCounts(pool),jf=jitFus(pool);
+    var tc=TKEYS.map(function(k){return t[k]||0;});
+    var tgtBudget=sc.selMonth?budgetInput(sc.selMonth,"budget",t.budget):budgetStatic(t.budget);
+    var actBudget=sc.selMonth?budgetInput(sc.selMonth,"spend",t.spend):budgetStatic(t.spend);
+    return '<div class="twrap"><table class="ftable"><thead><tr>'+ftableHead().join("")+'</tr></thead><tbody>'+
+      '<tr><td class="rowh">目標</td>'+ftableRowCells(tc,t.jitai||0,t.fusaiyo||0,tgtBudget)+'</tr>'+
+      '<tr class="actual"><td class="rowh">実数</td>'+ftableRowCells(ac,jf.jit,jf.fus,actBudget,{counts:tc,jit:t.jitai||0,fus:t.fusaiyo||0})+'</tr>'+
+      '</tbody></table></div>';
+  }
+  function funnelChart(sc){
+    var t=sc.t,ac=funnelCounts(sc.pool);
+    var tc=TKEYS.map(function(k){return t[k]||0;});
+    var max=Math.max.apply(null,ac.concat(tc,[1]));
+    var rows=STAGES.map(function(st,i){
+      var v=ac[i],tg=tc[i];
+      var rate=i>0?pct(ac[i],ac[i-1]):"";
+      return '<div class="frow"><span class="fl">'+esc(st.name)+'</span>'+
+        '<div class="fbar"><i class="fill" style="width:'+Math.round(v/max*100)+'%"></i>'+
+        (tg>0?'<i class="mark" style="left:'+Math.min(100,Math.round(tg/max*100))+'%" title="目標 '+tg+'"></i>':'')+'</div>'+
+        '<span class="fv">'+v+(rate?'<span class="fr">'+rate+'</span>':'')+'</span></div>';
+    }).join("");
+    return '<div class="flegend"><span><i class="lf"></i>実数</span><span><i class="lm"></i>目標</span></div>'+rows;
+  }
+
+  function monthlyTable(){
+    var months=monthsBetween(data.settings.monthlyFrom,data.settings.monthlyTo);
+    if(!months.length)return '<div class="aempty">期間を指定してください</div>';
+    var rows=months.map(function(ym){
+      var pool=data.items.filter(function(c){return inMonth(c,ym);});
+      var t=monthTargets(ym)||newTargetsFull();
+      var ac=funnelCounts(pool),jf=jitFus(pool);
+      var tc=TKEYS.map(function(k){return t[k]||0;});
+      var ylabel=ym.split("-")[0]+"年"+(+ym.split("-")[1])+"月";
+      return '<tr><td class="rowh">'+ylabel+' 目標</td>'+ftableRowCells(tc,t.jitai||0,t.fusaiyo||0,budgetInput(ym,"budget",t.budget))+'</tr>'+
+        '<tr class="actual"><td class="rowh">'+ylabel+' 実数</td>'+ftableRowCells(ac,jf.jit,jf.fus,budgetInput(ym,"spend",t.spend),{counts:tc,jit:t.jitai||0,fus:t.fusaiyo||0})+'</tr>';
+    }).join("");
+    return '<div class="twrap"><table class="ftable"><thead><tr>'+ftableHead().join("")+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  var flowEditOpen=false,flowNamesDraft=null,flowColorsDraft=null,flowRowsDraft=null;
+  var FLOW_OWNER_RE=/一次面談担当者|一次面談者|\b[A-F]\b/g;
+  function flowOwnerCellHTML(raw){
+    return esc(raw).replace(FLOW_OWNER_RE,function(m){
+      var code=(m==="一次面談担当者"||m==="一次面談者")?"F":m;
+      var name=data.flowNames[code]||m,color=data.flowColors[code]||"var(--muted)";
+      return '<span class="flow-pill" style="background:color-mix(in srgb,'+color+' 15%,transparent);color:'+color+'">'+esc(name)+'</span>';
+    });
+  }
+  function syncFlowDraftFromDOM(){
+    if(!flowEditOpen)return;
+    document.querySelectorAll(".fe-name").forEach(function(inp){flowNamesDraft[inp.dataset.code]=inp.value.trim()||inp.dataset.code;});
+    document.querySelectorAll(".fe-swatches").forEach(function(wrap){var on=wrap.querySelector(".fe-sw.on");if(on)flowColorsDraft[wrap.dataset.code]=on.dataset.c;});
+    document.querySelectorAll("#flow-rows-edit tr[data-i]").forEach(function(tr){
+      var i=+tr.dataset.i;
+      flowRowsDraft[i]={item:tr.querySelector(".fr-item").value,cond:tr.querySelector(".fr-cond").value,owner:tr.querySelector(".fr-owner").value};
+    });
+  }
+  function renderFlow(){
+    var editBtn='<button type="button" class="linkbtn" id="flow-edit-btn" style="margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px;justify-content:flex-start">'+
+      (flowEditOpen?ICON_X+" 閉じる":ICON_EDIT+" 編集する")+'</button>';
+    var editPanel="",tableInner;
+    if(flowEditOpen){
+      editPanel=acard("担当の名前・色を編集","",
+        FLOW_ROLE_CODES.map(function(code){
+          var name=flowNamesDraft[code],color=flowColorsDraft[code];
+          return '<div class="fe-row">'+
+            '<input class="fe-name" data-code="'+code+'" value="'+esc(name)+'" maxlength="14">'+
+            '<div class="fe-swatches" data-code="'+code+'">'+FLOW_PALETTE.map(function(c){
+              return '<button type="button" class="fe-sw'+(c===color?" on":"")+'" data-code="'+code+'" data-c="'+c+'" style="background:'+c+'" aria-label="'+c+'"></button>';
+            }).join("")+'</div></div>';
+        }).join(""));
+      var editRows=flowRowsDraft.map(function(r,i){
+        return '<tr data-i="'+i+'"><td class="fidx"><span class="idx">'+(i+1)+'</span></td>'+
+          '<td><input class="fr-item" value="'+esc(r.item)+'" placeholder="項目"></td>'+
+          '<td><input class="fr-cond" value="'+esc(r.cond||"")+'" placeholder="条件（任意）"></td>'+
+          '<td><input class="fr-owner" value="'+esc(r.owner)+'" placeholder="例：B（A）"></td>'+
+          '<td><button type="button" class="fr-del" data-i="'+i+'" aria-label="削除">'+ICON_X+'</button></td></tr>';
+      }).join("");
+      tableInner='<div class="twrap"><table class="ftable flow edit"><thead><tr><th></th><th>項目</th><th>条件</th><th>担当</th><th></th></tr></thead>'+
+        '<tbody id="flow-rows-edit">'+editRows+'</tbody></table></div>'+
+        '<button type="button" class="linkbtn" id="flow-addrow-btn" style="color:var(--accent)">＋ 行を追加</button>';
+    }else{
+      var rows=data.flowRows.map(function(r,i){
+        return '<tr><td class="fidx"><span class="idx">'+(i+1)+'</span></td><td class="fi">'+esc(r.item)+'</td><td class="fc">'+esc(r.cond||"—")+'</td><td class="fo">'+flowOwnerCellHTML(r.owner)+'</td></tr>';
+      }).join("");
+      tableInner='<div class="twrap"><table class="ftable flow"><thead><tr><th></th><th>項目</th><th>条件</th><th>担当</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }
+    document.getElementById("flow").innerHTML='<div class="ascreen"><h2>業務フロー</h2>'+
+      '<div class="note" style="margin:0 0 12px">BPO_業務遂行フローを基にした参照表です（アプリ内の担当CAとは別管理）。</div>'+
+      editBtn+editPanel+
+      acard("業務フロー一覧",(flowEditOpen?flowRowsDraft:data.flowRows).length+"項目",tableInner)+
+      (flowEditOpen?'<button class="btn primary" id="flow-save-btn" style="width:100%;margin:14px 0 4px">変更を保存する</button>':'')+
+      '</div>';
+    document.getElementById("flow-edit-btn").addEventListener("click",function(){
+      if(flowEditOpen){flowEditOpen=false;renderFlow();return;}
+      flowNamesDraft=Object.assign({},data.flowNames);flowColorsDraft=Object.assign({},data.flowColors);
+      flowRowsDraft=data.flowRows.map(function(r){return Object.assign({},r);});
+      flowEditOpen=true;renderFlow();
+    });
+    if(flowEditOpen){
+      document.querySelectorAll(".fe-swatches").forEach(function(wrap){
+        wrap.addEventListener("click",function(e){
+          var b=e.target.closest(".fe-sw");if(!b)return;
+          wrap.querySelectorAll(".fe-sw").forEach(function(x){x.classList.toggle("on",x===b);});
+        });
+      });
+      document.getElementById("flow-addrow-btn").addEventListener("click",function(){
+        syncFlowDraftFromDOM();flowRowsDraft.push({item:"",cond:"",owner:""});renderFlow();
+        var last=document.querySelector("#flow-rows-edit tr:last-child .fr-item");if(last)last.focus();
+      });
+      document.getElementById("flow-rows-edit").addEventListener("click",function(e){
+        var b=e.target.closest(".fr-del");if(!b)return;
+        syncFlowDraftFromDOM();flowRowsDraft.splice(+b.dataset.i,1);renderFlow();
+      });
+      document.getElementById("flow-save-btn").addEventListener("click",function(){
+        syncFlowDraftFromDOM();
+        data.flowNames=flowNamesDraft;data.flowColors=flowColorsDraft;
+        data.flowRows=flowRowsDraft.filter(function(r){return r.item.trim();});
+        save();flowEditOpen=false;renderFlow();
+      });
+    }
+  }
+  function renderAnalytics(){
+    var sc=analysisScope();var per=sc.per;
+    var pool=data.items.filter(inRange);
+    var active=pool.filter(function(c){return c.status!=="rejected";});
+    var rejected=pool.filter(function(c){return c.status==="rejected";});
+    var over=active.filter(function(c){return stateOf(c)==="over";}).length;
+    var ac=funnelCounts(pool);
+    var ownerRows=data.people.map(function(p){var mine=active.filter(function(c){return c.ca===p.id;});
+      return {label:p.name,value:mine.length,over:mine.filter(function(c){return stateOf(c)==="over";}).length};}).filter(function(r){return r.value>0;});
+    var un=active.filter(function(c){return !c.ca;});if(un.length)ownerRows.push({label:"未割当",value:un.length,over:un.filter(function(c){return stateOf(c)==="over";}).length});
+    var mediaRows=countBy(pool,function(c){return c.media||"未設定";});
+    var jobRows=countBy(pool,function(c){return c.job||"未設定";});
+    var reasonRows=countBy(rejected,function(c){return (c.rejType||"見送り")+"："+(c.rejReason||"理由未記入");});
+    var rejRate=pool.length?Math.round(rejected.length/pool.length*100):0;
+    var psel='<select class="aselect" id="ana-period">'+data.periods.map(function(p){return '<option value="'+p.id+'"'+(p.id===per.id?" selected":"")+'>'+esc(p.name)+'（'+esc(p.start||"—")+'〜'+esc(p.end||"—")+'）</option>';}).join("")+'</select>';
+    var msel='<select class="aselect" id="ana-month"><option value="">期間全体</option>'+sc.months.map(function(ym){
+      var l=ym.split("-")[0]+"年"+(+ym.split("-")[1])+"月";
+      return '<option value="'+ym+'"'+(ym===sc.selMonth?" selected":"")+'>'+l+'</option>';}).join("")+'</select>';
+    var scopeLabel=sc.selMonth?(sc.selMonth.split("-")[0]+"年"+(+sc.selMonth.split("-")[1])+"月"):"期間全体（"+esc(per.name)+"）";
+    var mFrom=data.settings.monthlyFrom,mTo=data.settings.monthlyTo;
+    var mLabel=(mFrom===mTo)?ymLabel(mFrom):(ymLabel(mFrom)+"〜"+ymLabel(mTo));
+    var monthRangeUI='<div class="mr-row">'+
+      '<div class="mr-field"><label>開始月</label><input type="month" id="mr-from" value="'+esc(mFrom||"")+'"></div>'+
+      '<div class="mr-field"><label>終了月</label><input type="month" id="mr-to" value="'+esc(mTo||"")+'"></div>'+
+      '<button type="button" class="mr-btn" id="mr-prev">前月のみ</button>'+
+      '<button type="button" class="mr-btn" id="mr-period">期間全体</button>'+
+      '</div>';
+    document.getElementById("analytics").innerHTML='<div class="ascreen"><h2>分析</h2>'+
+      '<div class="aperiod">'+psel+msel+
+        '<button class="csv" id="csv-btn">'+ICON_DL+' CSV出力</button>'+
+        '<button class="csv ghost2" id="csv-import-btn">'+ICON_UL+' CSV取込</button>'+
+        '<input type="file" id="csv-file" accept=".csv,text/csv" hidden>'+
+      '</div>'+
+      '<button type="button" class="linkbtn" id="csv-template-btn" style="margin:-8px 0 4px;text-align:left;color:var(--accent)">テンプレートCSVをダウンロード</button>'+
+      '<div class="kpis">'+kpi("ok",active.length,"選考中")+kpi("over",over,"遅延中")+kpi("rej",rejected.length,"辞退・不採用")+kpi("ok",ac[STAGES.length-1],"入職")+'</div>'+
+      acard("ファネル","実数と目標　・　"+scopeLabel,funnelChart(sc))+
+      acard("歩留（目標 vs 実数）",scopeLabel,funnelTable(sc))+
+      acard("月別の歩留",mLabel,monthRangeUI+monthlyTable())+
+      acard("担当者の負荷（選考中）",dot("over")+"遅延",bars(ownerRows))+
+      acard("媒体別の応募数","全"+pool.length+"件",bars(mediaRows))+
+      acard("応募職種別","",bars(jobRows))+
+      acard("辞退・不採用の理由","率 "+rejRate+"%",rejected.length?reasonRows.map(function(r){return '<div class="rz">'+esc(r.label)+'<span class="rzn">'+r.value+'</span></div>';}).join(""):'<div class="aempty">辞退・不採用はありません</div>')+
+      '</div>';
+    document.getElementById("csv-btn").addEventListener("click",exportCSV);
+    document.getElementById("csv-template-btn").addEventListener("click",downloadTemplateCSV);
+    document.getElementById("csv-import-btn").addEventListener("click",function(){document.getElementById("csv-file").click();});
+    document.getElementById("csv-file").addEventListener("change",function(e){
+      var f=e.target.files&&e.target.files[0];if(!f)return;
+      var reader=new FileReader();
+      reader.onload=function(){importCSV(String(reader.result||""));e.target.value="";};
+      reader.readAsText(f,"utf-8");
+    });
+    document.getElementById("ana-period").addEventListener("change",function(){data.settings.activePeriod=this.value;data.settings.activeMonth="";save();renderAnalytics();});
+    document.getElementById("ana-month").addEventListener("change",function(){data.settings.activeMonth=this.value;save();renderAnalytics();});
+    document.getElementById("mr-from").addEventListener("change",function(){data.settings.monthlyFrom=this.value;save();renderAnalytics();});
+    document.getElementById("mr-to").addEventListener("change",function(){data.settings.monthlyTo=this.value;save();renderAnalytics();});
+    document.getElementById("mr-prev").addEventListener("click",function(){var pm=prevMonthYM();data.settings.monthlyFrom=pm;data.settings.monthlyTo=pm;save();renderAnalytics();});
+    document.getElementById("mr-period").addEventListener("click",function(){data.settings.monthlyFrom=per.start;data.settings.monthlyTo=per.end;save();renderAnalytics();});
+  }
+
+  // ---- CSV ----
+  var CSV_HEAD=["応募日","名前","媒体","屋号","希望職種","電話番号","有効応募","LINE流入","一次調整","一次着座","二次調整","二次着座","内定","内定承諾","入職"].concat(REJ_TYPES).concat(["見送り理由","担当CA","メモ"]);
+  function csvCell(v){v=String(v==null?"":v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+  function toCSV(rows){return rows.map(function(r){return r.map(csvCell).join(",");}).join("\r\n");}
+  function downloadCSVFile(text,filename){
+    var blob=new Blob(["﻿"+text],{type:"text/csv;charset=utf-8;"});
+    var url=URL.createObjectURL(blob);var a=document.createElement("a");
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
+  function exportCSV(){
+    var pool=data.items.filter(inRange);
+    var rows=[CSV_HEAD];
+    pool.forEach(function(c){
+      var r=reached(c),mark=function(i){return r>=i?"●":"";};
+      var rejMarks=REJ_TYPES.map(function(t){return (c.status==="rejected"&&c.rejType===t)?"●":"";});
+      rows.push([c.applied||"",c.name,c.media||"",c.company||"",c.job||"",c.phone||"",
+        mark(1),mark(2),mark(3),mark(4),mark(5),mark(6),mark(7),mark(8),mark(9)].concat(rejMarks).concat([
+        c.status==="rejected"?(c.rejReason||""):"",c.ca?pname(c.ca):"",c.notes||""]));
+    });
+    var per=activePeriod();
+    downloadCSVFile(toCSV(rows),"採用歩留_"+(per.name||"")+"_"+(per.start||"")+"_"+(per.end||"")+".csv");
+  }
+  function downloadTemplateCSV(){
+    var sample=["2026-08-01","（例）山田 太郎","Indeed","","営業","090-0000-0000","●","●"];
+    while(sample.length<CSV_HEAD.length)sample.push("");
+    downloadCSVFile(toCSV([CSV_HEAD,sample]),"候補者インポート_テンプレート.csv");
+  }
+  function parseCSV(text){
+    text=text.replace(/^﻿/,"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    var rows=[],row=[],field="",inQ=false;
+    for(var i=0;i<text.length;i++){var ch=text[i];
+      if(inQ){
+        if(ch==='"'){if(text[i+1]==='"'){field+='"';i++;}else inQ=false;}
+        else field+=ch;
+      }else{
+        if(ch==='"')inQ=true;
+        else if(ch===','){row.push(field);field="";}
+        else if(ch==='\n'){row.push(field);rows.push(row);row=[];field="";}
+        else field+=ch;
+      }
+    }
+    if(field.length||row.length){row.push(field);rows.push(row);}
+    return rows.filter(function(r){return r.some(function(x){return x!=="";});});
+  }
+  function importCSV(text){
+    var rows=parseCSV(text);if(!rows.length){alert("CSVを読み取れませんでした");return;}
+    var head=rows[0].map(function(h){return h.trim();});
+    var idx={};head.forEach(function(h,i){idx[h]=i;});
+    if(idx["名前"]==null){alert("「名前」列が見つかりません。テンプレートCSVの形式で用意してください。");return;}
+    var get=function(r,k){return idx[k]!=null?(r[idx[k]]||"").trim():"";};
+    var mark=function(r,k){return !!get(r,k);};
+    var existingPhones={};data.items.forEach(function(c){if(c.phone)existingPhones[c.phone]=true;});
+    var added=0,skipped=0;
+    for(var i=1;i<rows.length;i++){
+      var r=rows[i];var name=get(r,"名前");if(!name)continue;
+      var phone=get(r,"電話番号");
+      if(phone&&existingPhones[phone]){skipped++;continue;}
+      var flags=[mark(r,"有効応募"),mark(r,"LINE流入"),mark(r,"一次調整"),mark(r,"一次着座"),mark(r,"二次調整"),mark(r,"二次着座"),mark(r,"内定"),mark(r,"内定承諾"),mark(r,"入職")];
+      var stage=0;for(var s=0;s<flags.length;s++)if(flags[s])stage=s+1;
+      var caName=get(r,"担当CA"),ca="";
+      if(caName){var found=data.people.filter(function(p){return p.name===caName;})[0];ca=found?found.id:addPerson(caName);}
+      var rejType=REJ_TYPES.filter(function(t){return mark(r,t);})[0];
+      var applied=get(r,"応募日")||iso(today());
+      var c={id:++data.seq,name:name,stage:stage,ca:ca,due:{},notes:get(r,"メモ"),status:"active",
+        applied:/^\d{4}-\d{2}-\d{2}$/.test(applied)?applied:iso(today()),
+        job:get(r,"希望職種"),media:get(r,"媒体"),phone:phone,company:get(r,"屋号")};
+      if(rejType){c.status="rejected";c.rejType=rejType;c.rejStage=stage;c.rejReason=get(r,"見送り理由");c.rejDate=iso(today());}
+      else c.due[stage]=iso(addDays(today(),3));
+      data.items.push(c);if(phone)existingPhones[phone]=true;added++;
+    }
+    save();spCa.refresh();render();
+    alert(added+"件を取り込みました"+(skipped?"（重複する電話番号 "+skipped+"件はスキップ）":""));
+  }
+
+  // ---- drag & drop ----
+  (function initDrag(){
+    var board=document.getElementById("board");var drag=null,curCol=null;
+    board.addEventListener("pointerdown",function(e){
+      if(view!=="active"||screen!=="home")return;if(e.button!=null&&e.button!==0)return;
+      var card=e.target.closest(".card");if(!card)return;
+      var id=+card.dataset.id,sx=e.clientX,sy=e.clientY,started=false;
+      var hold=setTimeout(begin,230);
+      function begin(){started=true;var r=card.getBoundingClientRect();var clone=card.cloneNode(true);clone.className="card drag-ghost";
+        clone.style.width=r.width+"px";clone.style.left=r.left+"px";clone.style.top=r.top+"px";document.body.appendChild(clone);
+        drag={id:id,card:card,clone:clone,offx:sx-r.left,offy:sy-r.top};card.classList.add("dragging");document.body.classList.add("dragging-active");
+        if(navigator.vibrate)navigator.vibrate(12);}
+      function move(ev){if(!started){if(Math.abs(ev.clientX-sx)>10||Math.abs(ev.clientY-sy)>10){clearTimeout(hold);cleanup();}return;}
+        ev.preventDefault();drag.clone.style.left=(ev.clientX-drag.offx)+"px";drag.clone.style.top=(ev.clientY-drag.offy)+"px";
+        var vh=window.innerHeight;if(ev.clientY>vh-80)window.scrollBy(0,18);else if(ev.clientY<100)window.scrollBy(0,-18);
+        var el=document.elementFromPoint(ev.clientX,ev.clientY);var drop=el&&el.closest?el.closest(".drop"):null;
+        if(curCol&&curCol!==drop)curCol.classList.remove("drop-hot");if(drop){drop.classList.add("drop-hot");curCol=drop;}}
+      function up(ev){clearTimeout(hold);if(started)finish(ev.clientX,ev.clientY);cleanup();}
+      function cleanup(){document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",up);document.removeEventListener("pointercancel",up);}
+      document.addEventListener("pointermove",move,{passive:false});document.addEventListener("pointerup",up);document.addEventListener("pointercancel",up);
+    });
+    function finish(x,y){var el=document.elementFromPoint(x,y);var drop=el&&el.closest?el.closest(".drop"):null;var stage=drop?+drop.dataset.stage:null;
+      if(curCol){curCol.classList.remove("drop-hot");curCol=null;}if(drag.clone.parentNode)drag.clone.parentNode.removeChild(drag.clone);
+      drag.card.classList.remove("dragging");document.body.classList.remove("dragging-active");
+      var c=data.items.filter(function(z){return z.id===drag.id;})[0];if(c&&stage!=null&&stage!==c.stage)moveTo(c,stage);
+      drag=null;justDragged=true;setTimeout(function(){justDragged=false;},60);render();}
+  })();
+
+  function openS(id){document.getElementById("scrim").classList.add("on");document.getElementById(id).classList.add("on");}
+  function closeS(){document.getElementById("scrim").classList.remove("on");
+    ["sheet","addsheet","setsheet","drawer"].forEach(function(id){document.getElementById(id).classList.remove("on");});}
+  document.getElementById("scrim").addEventListener("click",closeS);
+  document.getElementById("sh-close").addEventListener("click",closeS);
+  document.getElementById("add-close").addEventListener("click",closeS);
+
+  initApp();
+})();
+</script>
+
+</body>
+</html>
