@@ -1,0 +1,14 @@
+{
+  "name": "BPO採用管理",
+  "short_name": "BPO採用管理",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EEF0F9",
+  "theme_color": "#5B4FE9",
+  "lang": "ja",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

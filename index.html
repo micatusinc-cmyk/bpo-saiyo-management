@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5B4FE9">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BPO採用管理">
 <title>BPO採用管理 ATS</title>
 <style>
   :root{
@@ -304,10 +310,18 @@
   .fe-swatches{display:flex;gap:8px;flex-wrap:wrap}
   .fe-sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;flex:none;transition:transform .12s}
   .fe-sw.on{border-color:var(--ink);transform:scale(1.12)}
-  table.ftable.flow.edit td{padding:6px 8px}
-  table.ftable.flow.edit input{width:100%;min-width:120px;font-family:inherit;font-size:13px;color:var(--ink);
-    background:var(--panel-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;color-scheme:light dark}
-  .fr-del{border:none;background:none;color:var(--over);padding:6px;flex:none}
+  .fr-cards{display:flex;flex-direction:column;gap:16px}
+  .fr-card{position:relative;border:1px solid var(--line);border-radius:14px;padding:16px 14px 12px;
+    background:var(--panel-2);display:flex;flex-direction:column;gap:11px}
+  .fr-card .fr-num{position:absolute;top:-10px;left:13px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;box-shadow:0 3px 8px -2px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .fr-field{display:flex;flex-direction:column;gap:6px}
+  .fr-field label{font-size:11px;font-weight:750;color:var(--muted);letter-spacing:.02em}
+  .fr-field input{font-family:inherit;font-size:15px;color:var(--ink);background:var(--panel);
+    border:1px solid var(--line-strong);border-radius:10px;padding:11px 12px;color-scheme:light dark}
+  .fr-field input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-weak)}
+  .fr-del{align-self:flex-end;border:none;background:none;color:var(--over);font-size:12px;font-weight:700;
+    display:flex;align-items:center;gap:5px;padding:6px 4px;margin-top:2px}
   .ascreen h2{margin:2px 2px 4px;font-size:21px;font-weight:800;letter-spacing:-.01em}
   .aperiod{display:flex;align-items:center;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
   .aperiod .pd{font-size:13px;color:var(--muted);font-weight:600}
@@ -395,6 +409,7 @@
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="boot-screen" style="position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -472,8 +487,17 @@
         <input type="date" id="due-input">
       </div>
 
-      <div class="sec-l" style="margin-top:18px">メモ（面談記録・所感）</div>
-      <textarea id="notes" class="notes" placeholder="面談メモ・所感・次アクションなど自由に記入"></textarea>
+      <div class="sec-l" style="margin-top:18px">電話ステータス</div>
+      <div class="selrow"><label>状況</label><select id="sh-phonestatus">
+        <option value="">未設定</option><option value="未架電">未架電</option><option value="不通">不通</option>
+        <option value="不通2">不通2</option><option value="連絡済み">連絡済み</option>
+      </select></div>
+
+      <div class="sec-l" style="margin-top:18px">メモ</div>
+      <textarea id="notes" class="notes" placeholder="所感・次アクションなど自由に記入"></textarea>
+
+      <div class="sec-l" style="margin-top:18px">メモ（面談用）</div>
+      <textarea id="interview-notes" class="notes" placeholder="面談での受け答え・印象など"></textarea>
 
       <div class="moves">
         <button class="btn" id="back-btn">← 戻す</button>
@@ -502,11 +526,16 @@
     <button class="btn ghost" id="add-close" style="margin-left:auto" aria-label="閉じる">✕</button></div></div>
   <div class="sh-body">
     <div class="field"><label for="add-name">お名前</label><input id="add-name" placeholder="例：佐藤 花子" autocomplete="off"></div>
+    <div class="field"><label for="add-furigana">フリガナ</label><input id="add-furigana" placeholder="例：サトウ ハナコ" autocomplete="off"></div>
     <div class="field"><label for="add-applied">応募日</label><input type="date" id="add-applied"></div>
     <div class="field"><label>応募職種（希望職種）</label><div class="selplus" id="sp-job"></div></div>
     <div class="field"><label>媒体名（どこから応募？）</label><div class="selplus" id="sp-media"></div></div>
     <div class="field"><label for="add-phone">電話番号</label>
       <input id="add-phone" type="tel" inputmode="tel" placeholder="例：090-1234-5678" autocomplete="off"></div>
+    <div class="field"><label for="add-phonestatus">電話ステータス</label><select id="add-phonestatus">
+      <option value="">未設定</option><option value="未架電">未架電</option><option value="不通">不通</option>
+      <option value="不通2">不通2</option><option value="連絡済み">連絡済み</option>
+    </select></div>
     <div class="field"><label for="add-company">屋号（提案先・任意）</label><input id="add-company" placeholder="例：株式会社〇〇" autocomplete="off"></div>
     <div class="field"><label>担当CA（未割当でもOK）</label><div class="selplus" id="sp-ca"></div></div>
     <div class="field"><label for="add-stage">開始ステージ</label><select id="add-stage"></select></div>
@@ -541,6 +570,7 @@
       <div class="sec-l" style="margin-top:22px">リマインド通知</div>
       <label class="chkline"><input type="checkbox" id="set-notify"> このブラウザを開いた時に遅延をお知らせ</label>
       <div class="note" id="notify-note" style="margin-top:10px"></div>
+      <button type="button" class="btn" id="notify-test-btn" style="width:100%;margin-top:10px">テスト通知を送る</button>
     </div>
 
     <div class="spane" id="pane-period" hidden>
@@ -665,6 +695,7 @@
     if(el)el.querySelector(".boot-msg").textContent=msg;
   }
   function hideBoot(){var el=document.getElementById("boot-screen");if(el)el.remove();}
+  if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){});}
   async function initApp(){
     try{
       var res=await sbClient.from("app_state").select("*").eq("id",1).maybeSingle();
@@ -687,8 +718,8 @@
     function d(m,day){return y+"-"+String(m).padStart(2,"0")+"-"+String(day).padStart(2,"0");}
     function c(id,name,stage,ca,dueOff,media,phone,job,company,applied){
       var due={};if(dueOff!=null)due[stage]=iso(addDays(today(),dueOff));
-      return {id:id,name:name,stage:stage,ca:ca||"",due:due,media:media||"",phone:phone||"",job:job||"",
-        company:company||"",applied:applied,notes:"",status:"active"};
+      return {id:id,name:name,furigana:"",stage:stage,ca:ca||"",due:due,media:media||"",phone:phone||"",
+        phoneStatus:"",job:job||"",company:company||"",applied:applied,notes:"",interviewNotes:"",status:"active"};
     }
     var items=[
       c(1,"田中 健太",0,"",3,"Indeed","090-1000-0001","販売・接客","",d(8,9)),
@@ -783,7 +814,7 @@
   function matchesMonth(c){return monthFilter==="all"||(c.applied&&c.applied.slice(0,7)===monthFilter);}
   function distinctAppliedMonths(){var s={};data.items.forEach(function(c){if(c.applied)s[c.applied.slice(0,7)]=true;});return Object.keys(s).sort();}
   function matchesQ(c){if(!q)return true;var s=q.toLowerCase();
-    return [c.name,c.job,c.media,c.company,c.phone,c.ca?pname(c.ca):""].some(function(v){return String(v||"").toLowerCase().indexOf(s)>-1;});}
+    return [c.name,c.furigana,c.job,c.media,c.company,c.phone,c.ca?pname(c.ca):""].some(function(v){return String(v||"").toLowerCase().indexOf(s)>-1;});}
 
   function render(){
     document.getElementById("today").textContent=fmt(iso(today()));
@@ -928,10 +959,11 @@
       '<span style="margin-left:auto;color:var(--muted)">担当 '+esc(c.ca?pname(c.ca):"未割当")+'</span>';}
   function drawSheet(){var c=cur,rej=c.status==="rejected";
     document.getElementById("sh-av").outerHTML='<span class="av'+((!c.ca||!P(c.ca))?" none":"")+'" id="sh-av" style="'+((!c.ca||!P(c.ca))?"":"background:"+pcolor(c.ca))+'">'+esc(pinit(c.ca))+'</span>';
-    document.getElementById("sh-name").textContent=c.name;
+    document.getElementById("sh-name").textContent=c.name+(c.furigana?"（"+c.furigana+"）":"");
     drawStg();
     var parts=[];
     if(c.phone)parts.push('<a class="ct-phone" href="tel:'+esc(c.phone).replace(/[^0-9+]/g,"")+'">'+ICON_PHONE+esc(c.phone)+'</a>');
+    if(c.phoneStatus)parts.push('<span class="tag">電話 '+esc(c.phoneStatus)+'</span>');
     if(c.job)parts.push('<span class="tag job">'+esc(c.job)+'</span>');
     if(c.media)parts.push('<span class="tag">'+esc(c.media)+'</span>');
     if(c.company)parts.push('<span class="tag">屋号 '+esc(c.company)+'</span>');
@@ -952,7 +984,10 @@
       document.getElementById("sh-av").outerHTML='<span class="av'+((!c.ca||!P(c.ca))?" none":"")+'" id="sh-av" style="'+((!c.ca||!P(c.ca))?"":"background:"+pcolor(c.ca))+'">'+esc(pinit(c.ca))+'</span>';};
     var di=document.getElementById("due-input");di.value=c.due[c.stage]||"";
     di.oninput=function(){c.due[c.stage]=di.value;save();render();};
+    var ps=document.getElementById("sh-phonestatus");ps.value=c.phoneStatus||"";
+    ps.onchange=function(){c.phoneStatus=ps.value;save();drawSheet();};
     var nt=document.getElementById("notes");nt.value=c.notes||"";nt.oninput=function(){c.notes=nt.value;save();};
+    var inv=document.getElementById("interview-notes");inv.value=c.interviewNotes||"";inv.oninput=function(){c.interviewNotes=inv.value;save();};
     updateMove();
   }
   function updateMove(){var c=cur,last=c.stage===STAGES.length-1;
@@ -1010,7 +1045,8 @@
   function fillStageSelect(){document.getElementById("add-stage").innerHTML=STAGES.map(function(s,i){return '<option value="'+i+'">'+(i+1)+'. '+s.name+'</option>';}).join("");}
   fillStageSelect();
   document.getElementById("fab").addEventListener("click",function(){
-    ["add-name","add-phone","add-company"].forEach(function(id){document.getElementById(id).value="";});
+    ["add-name","add-furigana","add-phone","add-company"].forEach(function(id){document.getElementById(id).value="";});
+    document.getElementById("add-phonestatus").value="";
     document.getElementById("add-applied").value=iso(today());
     document.getElementById("add-due").value=iso(addDays(today(),3));
     document.getElementById("add-stage").value="0";
@@ -1020,9 +1056,9 @@
   document.getElementById("add-save").addEventListener("click",function(){
     var name=document.getElementById("add-name").value.trim();if(!name){document.getElementById("add-name").focus();return;}
     var stage=+document.getElementById("add-stage").value;
-    var c={id:++data.seq,name:name,stage:stage,ca:spCa.value||"",due:{},notes:"",status:"active",
+    var c={id:++data.seq,name:name,furigana:document.getElementById("add-furigana").value.trim(),stage:stage,ca:spCa.value||"",due:{},notes:"",interviewNotes:"",status:"active",
       applied:document.getElementById("add-applied").value,job:spJob.value||"",media:spMedia.value||"",
-      phone:document.getElementById("add-phone").value.trim(),company:document.getElementById("add-company").value.trim()};
+      phone:document.getElementById("add-phone").value.trim(),phoneStatus:document.getElementById("add-phonestatus").value,company:document.getElementById("add-company").value.trim()};
     c.due[stage]=document.getElementById("add-due").value;
     data.items.push(c);save();render();closeS();
   });
@@ -1093,9 +1129,17 @@
       box.checked=false;box.disabled=true;note.textContent="このブラウザは通知に対応していません。";return;
     }
     box.disabled=false;box.checked=!!data.settings.notify&&Notification.permission==="granted";
-    if(Notification.permission==="denied")note.textContent="通知がブロックされています。ブラウザのサイト設定から通知を許可してください。";
-    else note.textContent="このブラウザでこのページを開くたびに、1日1回まで「遅延・要注意」の候補者をお知らせします。アプリを閉じている間は届きません（LINE/メール通知には別途サーバー連携が必要です）。";
+    if(Notification.permission==="denied")note.textContent="通知がブロックされています。ブラウザのアドレスバー左側（鍵アイコンなど）→サイトの設定→通知、を「許可」に変更してください。";
+    else note.textContent="このブラウザでこのページを開くたびに、1日1回まで「遅延・要注意」の候補者をお知らせします。アプリを閉じている間は届きません。※通知の許可はサイトのURLごとに別管理なので、他の場所で許可していてもこのURLでは改めてチェックが必要です。うまく届かない時は「テスト通知を送る」で確認してください。";
   }
+  function sendTestNotification(){
+    if(typeof Notification==="undefined"){alert("このブラウザは通知に対応していません。");return;}
+    if(Notification.permission!=="granted"){alert("まず上のチェックボックスをONにして、通知を許可してください。");return;}
+    try{
+      new Notification("BPO採用管理（テスト）",{body:"この通知が見えていれば設定はOKです。"});
+    }catch(e){alert("通知の送信に失敗しました："+e.message);}
+  }
+  document.getElementById("notify-test-btn").addEventListener("click",sendTestNotification);
   document.getElementById("set-notify").addEventListener("change",function(){
     var box=this;
     if(box.checked){
@@ -1273,9 +1317,9 @@
     if(!flowEditOpen)return;
     document.querySelectorAll(".fe-name").forEach(function(inp){flowNamesDraft[inp.dataset.code]=inp.value.trim()||inp.dataset.code;});
     document.querySelectorAll(".fe-swatches").forEach(function(wrap){var on=wrap.querySelector(".fe-sw.on");if(on)flowColorsDraft[wrap.dataset.code]=on.dataset.c;});
-    document.querySelectorAll("#flow-rows-edit tr[data-i]").forEach(function(tr){
-      var i=+tr.dataset.i;
-      flowRowsDraft[i]={item:tr.querySelector(".fr-item").value,cond:tr.querySelector(".fr-cond").value,owner:tr.querySelector(".fr-owner").value};
+    document.querySelectorAll("#flow-rows-edit .fr-card[data-i]").forEach(function(card){
+      var i=+card.dataset.i;
+      flowRowsDraft[i]={item:card.querySelector(".fr-item").value,cond:card.querySelector(".fr-cond").value,owner:card.querySelector(".fr-owner").value};
     });
   }
   function renderFlow(){
@@ -1293,14 +1337,13 @@
             }).join("")+'</div></div>';
         }).join(""));
       var editRows=flowRowsDraft.map(function(r,i){
-        return '<tr data-i="'+i+'"><td class="fidx"><span class="idx">'+(i+1)+'</span></td>'+
-          '<td><input class="fr-item" value="'+esc(r.item)+'" placeholder="項目"></td>'+
-          '<td><input class="fr-cond" value="'+esc(r.cond||"")+'" placeholder="条件（任意）"></td>'+
-          '<td><input class="fr-owner" value="'+esc(r.owner)+'" placeholder="例：B（A）"></td>'+
-          '<td><button type="button" class="fr-del" data-i="'+i+'" aria-label="削除">'+ICON_X+'</button></td></tr>';
+        return '<div class="fr-card" data-i="'+i+'"><span class="fr-num">'+(i+1)+'</span>'+
+          '<div class="fr-field"><label>項目</label><input class="fr-item" value="'+esc(r.item)+'" placeholder="例：一次面接"></div>'+
+          '<div class="fr-field"><label>条件</label><input class="fr-cond" value="'+esc(r.cond||"")+'" placeholder="条件（任意）例：報酬金額の提示"></div>'+
+          '<div class="fr-field"><label>担当</label><input class="fr-owner" value="'+esc(r.owner)+'" placeholder="例：B（A）"></div>'+
+          '<button type="button" class="fr-del" data-i="'+i+'">'+ICON_X+' この項目を削除</button></div>';
       }).join("");
-      tableInner='<div class="twrap"><table class="ftable flow edit"><thead><tr><th></th><th>項目</th><th>条件</th><th>担当</th><th></th></tr></thead>'+
-        '<tbody id="flow-rows-edit">'+editRows+'</tbody></table></div>'+
+      tableInner='<div id="flow-rows-edit" class="fr-cards">'+editRows+'</div>'+
         '<button type="button" class="linkbtn" id="flow-addrow-btn" style="color:var(--accent)">＋ 行を追加</button>';
     }else{
       var rows=data.flowRows.map(function(r,i){
@@ -1329,7 +1372,7 @@
       });
       document.getElementById("flow-addrow-btn").addEventListener("click",function(){
         syncFlowDraftFromDOM();flowRowsDraft.push({item:"",cond:"",owner:""});renderFlow();
-        var last=document.querySelector("#flow-rows-edit tr:last-child .fr-item");if(last)last.focus();
+        var last=document.querySelector("#flow-rows-edit .fr-card:last-child .fr-item");if(last)last.focus();
       });
       document.getElementById("flow-rows-edit").addEventListener("click",function(e){
         var b=e.target.closest(".fr-del");if(!b)return;
@@ -1372,11 +1415,11 @@
       '</div>';
     document.getElementById("analytics").innerHTML='<div class="ascreen"><h2>分析</h2>'+
       '<div class="aperiod">'+psel+msel+
-        '<button class="csv" id="csv-btn">'+ICON_DL+' CSV出力</button>'+
-        '<button class="csv ghost2" id="csv-import-btn">'+ICON_UL+' CSV取込</button>'+
-        '<input type="file" id="csv-file" accept=".csv,text/csv" hidden>'+
+        '<button class="csv" id="csv-btn">'+ICON_DL+' Excel出力</button>'+
+        '<button class="csv ghost2" id="csv-import-btn">'+ICON_UL+' Excel取込</button>'+
+        '<input type="file" id="csv-file" accept=".xlsx" hidden>'+
       '</div>'+
-      '<button type="button" class="linkbtn" id="csv-template-btn" style="margin:-8px 0 4px;text-align:left;color:var(--accent)">テンプレートCSVをダウンロード</button>'+
+      '<button type="button" class="linkbtn" id="csv-template-btn" style="margin:-8px 0 4px;text-align:left;color:var(--accent)">テンプレートExcelをダウンロード</button>'+
       '<div class="kpis">'+kpi("ok",active.length,"選考中")+kpi("over",over,"遅延中")+kpi("rej",rejected.length,"辞退・不採用")+kpi("ok",ac[STAGES.length-1],"入職")+'</div>'+
       acard("ファネル","実数と目標　・　"+scopeLabel,funnelChart(sc))+
       acard("歩留（目標 vs 実数）",scopeLabel,funnelTable(sc))+
@@ -1386,14 +1429,14 @@
       acard("応募職種別","",bars(jobRows))+
       acard("辞退・不採用の理由","率 "+rejRate+"%",rejected.length?reasonRows.map(function(r){return '<div class="rz">'+esc(r.label)+'<span class="rzn">'+r.value+'</span></div>';}).join(""):'<div class="aempty">辞退・不採用はありません</div>')+
       '</div>';
-    document.getElementById("csv-btn").addEventListener("click",exportCSV);
-    document.getElementById("csv-template-btn").addEventListener("click",downloadTemplateCSV);
+    document.getElementById("csv-btn").addEventListener("click",exportXLSX);
+    document.getElementById("csv-template-btn").addEventListener("click",downloadTemplateXLSX);
     document.getElementById("csv-import-btn").addEventListener("click",function(){document.getElementById("csv-file").click();});
     document.getElementById("csv-file").addEventListener("change",function(e){
       var f=e.target.files&&e.target.files[0];if(!f)return;
       var reader=new FileReader();
-      reader.onload=function(){importCSV(String(reader.result||""));e.target.value="";};
-      reader.readAsText(f,"utf-8");
+      reader.onload=function(){importXLSX(reader.result);e.target.value="";};
+      reader.readAsArrayBuffer(f);
     });
     document.getElementById("ana-period").addEventListener("change",function(){data.settings.activePeriod=this.value;data.settings.activeMonth="";save();renderAnalytics();});
     document.getElementById("ana-month").addEventListener("change",function(){data.settings.activeMonth=this.value;save();renderAnalytics();});
@@ -1403,77 +1446,87 @@
     document.getElementById("mr-period").addEventListener("click",function(){data.settings.monthlyFrom=per.start;data.settings.monthlyTo=per.end;save();renderAnalytics();});
   }
 
-  // ---- CSV ----
-  var CSV_HEAD=["応募日","名前","媒体","屋号","希望職種","電話番号","有効応募","LINE流入","一次調整","一次着座","二次調整","二次着座","内定","内定承諾","入職"].concat(REJ_TYPES).concat(["見送り理由","担当CA","メモ"]);
-  function csvCell(v){v=String(v==null?"":v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
-  function toCSV(rows){return rows.map(function(r){return r.map(csvCell).join(",");}).join("\r\n");}
-  function downloadCSVFile(text,filename){
-    var blob=new Blob(["﻿"+text],{type:"text/csv;charset=utf-8;"});
-    var url=URL.createObjectURL(blob);var a=document.createElement("a");
-    a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  // ---- Excel(xlsx) 入出力 ----
+  var XLSX_HEAD=["応募日","名前","フリガナ","媒体","屋号","電話番号","電話","LINE流入","一次予約","一次着座","二次調整","二次着座","内定","内定承諾","入職","有効","不通","LINE移行なし","辞退","不採用","見送り理由","担当CA","メモ","面談メモ"];
+  function candidateRow(c){
+    var r=reached(c),rej=c.status==="rejected";
+    return [c.applied||"",c.name||"",c.furigana||"",c.media||"",c.company||"",c.phone||"",c.phoneStatus||"",
+      r>=2,r>=3,r>=4,r>=5,r>=6,r>=7,r>=8,r>=9,r>=1,
+      rej&&c.rejType==="不通",rej&&c.rejType==="LINE移行なし",rej&&c.rejType==="辞退",rej&&c.rejType==="不採用",
+      rej?(c.rejReason||""):"",c.ca?pname(c.ca):"",c.notes||"",c.interviewNotes||""];
   }
-  function exportCSV(){
-    var pool=data.items.filter(inRange);
-    var rows=[CSV_HEAD];
-    pool.forEach(function(c){
-      var r=reached(c),mark=function(i){return r>=i?"●":"";};
-      var rejMarks=REJ_TYPES.map(function(t){return (c.status==="rejected"&&c.rejType===t)?"●":"";});
-      rows.push([c.applied||"",c.name,c.media||"",c.company||"",c.job||"",c.phone||"",
-        mark(1),mark(2),mark(3),mark(4),mark(5),mark(6),mark(7),mark(8),mark(9)].concat(rejMarks).concat([
-        c.status==="rejected"?(c.rejReason||""):"",c.ca?pname(c.ca):"",c.notes||""]));
-    });
+  function exportXLSX(){
+    if(typeof XLSX==="undefined"){alert("Excel出力の準備中です。少し待ってからもう一度お試しください。");return;}
     var per=activePeriod();
-    downloadCSVFile(toCSV(rows),"採用歩留_"+(per.name||"")+"_"+(per.start||"")+"_"+(per.end||"")+".csv");
+    var months=monthsBetween(per.start,per.end);
+    if(!months.length){alert("期の開始月・終了月が設定されていません。設定→期・期間を確認してください。");return;}
+    var wb=XLSX.utils.book_new();
+    months.forEach(function(ym){
+      var monthNum=+ym.split("-")[1];
+      var rows=[XLSX_HEAD];
+      data.items.filter(function(c){return inMonth(c,ym);}).forEach(function(c){rows.push(candidateRow(c));});
+      var ws=XLSX.utils.aoa_to_sheet(rows);
+      var sheetName=((per.name||"期")+monthNum+"月").slice(0,31);
+      XLSX.utils.book_append_sheet(wb,ws,sheetName);
+    });
+    var startNum=+months[0].split("-")[1],endNum=+months[months.length-1].split("-")[1];
+    var filename="BPO採用管理_"+(per.name||"")+startNum+"月〜"+endNum+"月.xlsx";
+    XLSX.writeFile(wb,filename);
   }
-  function downloadTemplateCSV(){
-    var sample=["2026-08-01","（例）山田 太郎","Indeed","","営業","090-0000-0000","●","●"];
-    while(sample.length<CSV_HEAD.length)sample.push("");
-    downloadCSVFile(toCSV([CSV_HEAD,sample]),"候補者インポート_テンプレート.csv");
+  function downloadTemplateXLSX(){
+    if(typeof XLSX==="undefined"){alert("準備中です。少し待ってからもう一度お試しください。");return;}
+    var sample=["2026-08-01","（例）山田 太郎","（例）ヤマダ タロウ","Indeed","","090-0000-0000","未架電",
+      true,false,false,false,false,false,false,false,true,false,false,false,false,"","","",""];
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([XLSX_HEAD,sample]),"テンプレート");
+    XLSX.writeFile(wb,"候補者インポート_テンプレート.xlsx");
   }
-  function parseCSV(text){
-    text=text.replace(/^﻿/,"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
-    var rows=[],row=[],field="",inQ=false;
-    for(var i=0;i<text.length;i++){var ch=text[i];
-      if(inQ){
-        if(ch==='"'){if(text[i+1]==='"'){field+='"';i++;}else inQ=false;}
-        else field+=ch;
-      }else{
-        if(ch==='"')inQ=true;
-        else if(ch===','){row.push(field);field="";}
-        else if(ch==='\n'){row.push(field);rows.push(row);row=[];field="";}
-        else field+=ch;
-      }
-    }
-    if(field.length||row.length){row.push(field);rows.push(row);}
-    return rows.filter(function(r){return r.some(function(x){return x!=="";});});
+  function truthyCell(v){if(v===true||v===1)return true;var s=String(v==null?"":v).trim().toUpperCase();return s==="TRUE"||s==="1"||s==="○"||s==="●";}
+  function normalizeExcelDate(v){
+    if(v==null||v==="")return iso(today());
+    if(typeof v==="number"){var d=new Date(Math.round((v-25569)*86400*1000));
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+    var m=String(v).trim().match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    return m?(m[1]+"-"+m[2].padStart(2,"0")+"-"+m[3].padStart(2,"0")):iso(today());
   }
-  function importCSV(text){
-    var rows=parseCSV(text);if(!rows.length){alert("CSVを読み取れませんでした");return;}
-    var head=rows[0].map(function(h){return h.trim();});
-    var idx={};head.forEach(function(h,i){idx[h]=i;});
-    if(idx["名前"]==null){alert("「名前」列が見つかりません。テンプレートCSVの形式で用意してください。");return;}
-    var get=function(r,k){return idx[k]!=null?(r[idx[k]]||"").trim():"";};
-    var mark=function(r,k){return !!get(r,k);};
+  function importXLSX(arrayBuffer){
+    if(typeof XLSX==="undefined"){alert("Excel取込の準備中です。少し待ってからもう一度お試しください。");return;}
+    var wb;try{wb=XLSX.read(arrayBuffer,{type:"array",cellDates:false});}catch(e){alert("Excelファイルを読み取れませんでした");return;}
     var existingPhones={};data.items.forEach(function(c){if(c.phone)existingPhones[c.phone]=true;});
-    var added=0,skipped=0;
-    for(var i=1;i<rows.length;i++){
-      var r=rows[i];var name=get(r,"名前");if(!name)continue;
-      var phone=get(r,"電話番号");
-      if(phone&&existingPhones[phone]){skipped++;continue;}
-      var flags=[mark(r,"有効応募"),mark(r,"LINE流入"),mark(r,"一次調整"),mark(r,"一次着座"),mark(r,"二次調整"),mark(r,"二次着座"),mark(r,"内定"),mark(r,"内定承諾"),mark(r,"入職")];
-      var stage=0;for(var s=0;s<flags.length;s++)if(flags[s])stage=s+1;
-      var caName=get(r,"担当CA"),ca="";
-      if(caName){var found=data.people.filter(function(p){return p.name===caName;})[0];ca=found?found.id:addPerson(caName);}
-      var rejType=REJ_TYPES.filter(function(t){return mark(r,t);})[0];
-      var applied=get(r,"応募日")||iso(today());
-      var c={id:++data.seq,name:name,stage:stage,ca:ca,due:{},notes:get(r,"メモ"),status:"active",
-        applied:/^\d{4}-\d{2}-\d{2}$/.test(applied)?applied:iso(today()),
-        job:get(r,"希望職種"),media:get(r,"媒体"),phone:phone,company:get(r,"屋号")};
-      if(rejType){c.status="rejected";c.rejType=rejType;c.rejStage=stage;c.rejReason=get(r,"見送り理由");c.rejDate=iso(today());}
-      else c.due[stage]=iso(addDays(today(),3));
-      data.items.push(c);if(phone)existingPhones[phone]=true;added++;
-    }
+    var added=0,skipped=0,sheetsUsed=0;
+    wb.SheetNames.forEach(function(sn){
+      var aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:"",raw:true});
+      if(!aoa.length)return;
+      var headerRowIdx=-1,idx={};
+      for(var hi=0;hi<Math.min(aoa.length,5);hi++){
+        var map={};(aoa[hi]||[]).forEach(function(h,ci){map[String(h).trim()]=ci;});
+        if(map["名前"]!=null){headerRowIdx=hi;idx=map;break;}
+      }
+      if(headerRowIdx<0)return;
+      sheetsUsed++;
+      var get=function(r,k){return idx[k]!=null?r[idx[k]]:"";};
+      var getStr=function(r,k){var v=get(r,k);return v==null?"":String(v).trim();};
+      for(var ri=headerRowIdx+1;ri<aoa.length;ri++){
+        var r=aoa[ri];var name=getStr(r,"名前");if(!name)continue;
+        var phone=getStr(r,"電話番号");
+        if(phone&&existingPhones[phone]){skipped++;continue;}
+        var flags=[truthyCell(get(r,"有効")),truthyCell(get(r,"LINE流入")),truthyCell(get(r,"一次予約"))||truthyCell(get(r,"一次調整")),
+          truthyCell(get(r,"一次着座")),truthyCell(get(r,"二次調整")),truthyCell(get(r,"二次着座")),truthyCell(get(r,"内定")),
+          truthyCell(get(r,"内定承諾")),truthyCell(get(r,"入職"))];
+        var stage=0;for(var s=0;s<flags.length;s++)if(flags[s])stage=s+1;
+        var caName=getStr(r,"担当CA"),ca="";
+        if(caName){var found=data.people.filter(function(p){return p.name===caName;})[0];ca=found?found.id:addPerson(caName);}
+        var rejType=REJ_TYPES.filter(function(t){return truthyCell(get(r,t));})[0];
+        var c={id:++data.seq,name:name,furigana:getStr(r,"フリガナ"),stage:stage,ca:ca,due:{},
+          notes:getStr(r,"メモ"),interviewNotes:getStr(r,"面談メモ"),status:"active",
+          applied:normalizeExcelDate(get(r,"応募日")),job:getStr(r,"希望職種")||getStr(r,"応募職種"),
+          media:getStr(r,"媒体"),phone:phone,phoneStatus:getStr(r,"電話"),company:getStr(r,"屋号")};
+        if(rejType){c.status="rejected";c.rejType=rejType;c.rejStage=stage;c.rejReason=getStr(r,"見送り理由");c.rejDate=iso(today());}
+        else c.due[stage]=iso(addDays(today(),3));
+        data.items.push(c);if(phone)existingPhones[phone]=true;added++;
+      }
+    });
+    if(!sheetsUsed){alert("「名前」列を含むシートが見つかりませんでした。テンプレートの形式で用意してください。");return;}
     save();spCa.refresh();render();
     alert(added+"件を取り込みました"+(skipped?"（重複する電話番号 "+skipped+"件はスキップ）":""));
   }
