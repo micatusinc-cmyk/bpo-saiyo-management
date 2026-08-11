@@ -322,6 +322,12 @@
   .fr-field input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-weak)}
   .fr-del{align-self:flex-end;border:none;background:none;color:var(--over);font-size:12px;font-weight:700;
     display:flex;align-items:center;gap:5px;padding:6px 4px;margin-top:2px}
+  .col-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .col-chip{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:5px 6px 5px 10px}
+  .col-chip .col-label{font-family:inherit;font-size:13px;font-weight:650;color:var(--ink);background:transparent;border:none;width:74px;padding:2px 0}
+  .col-chip .col-label:focus{outline:none}
+  .col-chip .col-del{border:none;background:var(--over-bg);color:var(--over);border-radius:6px;width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;flex:none}
   .ascreen h2{margin:2px 2px 4px;font-size:21px;font-weight:800;letter-spacing:-.01em}
   .aperiod{display:flex;align-items:center;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
   .aperiod .pd{font-size:13px;color:var(--muted);font-weight:600}
@@ -779,6 +785,8 @@
     if(!data.flowNames)data.flowNames=Object.assign({},FLOW_DEFAULT_NAMES);
     if(!data.flowColors)data.flowColors=Object.assign({},FLOW_DEFAULT_COLORS);
     if(!data.flowRows)data.flowRows=FLOW_ROWS.map(function(r){return {item:r.item,cond:r.cond,owner:r.owner};});
+    if(!data.flowColumns)data.flowColumns=[{key:"item",label:"項目"},{key:"cond",label:"条件"},{key:"owner",label:"担当"}];
+    if(data.flowColSeq==null)data.flowColSeq=0;
     if(s.monthlyFrom==null){var pm=prevMonthYM();s.monthlyFrom=pm;s.monthlyTo=pm;}
   }
   function splitTargets(t,budget,n){var o={budget:Math.round((budget||0)/n)};
@@ -1304,7 +1312,7 @@
     }).join("");
     return '<div class="twrap"><table class="ftable"><thead><tr>'+ftableHead().join("")+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
-  var flowEditOpen=false,flowNamesDraft=null,flowColorsDraft=null,flowRowsDraft=null;
+  var flowEditOpen=false,flowNamesDraft=null,flowColorsDraft=null,flowRowsDraft=null,flowColumnsDraft=null;
   var FLOW_OWNER_RE=/一次面談担当者|一次面談者|\b[A-F]\b/g;
   function flowOwnerCellHTML(raw){
     return esc(raw).replace(FLOW_OWNER_RE,function(m){
@@ -1317,15 +1325,17 @@
     if(!flowEditOpen)return;
     document.querySelectorAll(".fe-name").forEach(function(inp){flowNamesDraft[inp.dataset.code]=inp.value.trim()||inp.dataset.code;});
     document.querySelectorAll(".fe-swatches").forEach(function(wrap){var on=wrap.querySelector(".fe-sw.on");if(on)flowColorsDraft[wrap.dataset.code]=on.dataset.c;});
+    document.querySelectorAll(".col-label").forEach(function(inp){var i=+inp.dataset.i;if(flowColumnsDraft[i])flowColumnsDraft[i].label=inp.value.trim()||flowColumnsDraft[i].label;});
     document.querySelectorAll("#flow-rows-edit .fr-card[data-i]").forEach(function(card){
-      var i=+card.dataset.i;
-      flowRowsDraft[i]={item:card.querySelector(".fr-item").value,cond:card.querySelector(".fr-cond").value,owner:card.querySelector(".fr-owner").value};
+      var i=+card.dataset.i,obj={};
+      card.querySelectorAll(".fr-val").forEach(function(inp){obj[inp.dataset.key]=inp.value;});
+      flowRowsDraft[i]=obj;
     });
   }
   function renderFlow(){
     var editBtn='<button type="button" class="linkbtn" id="flow-edit-btn" style="margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px;justify-content:flex-start">'+
       (flowEditOpen?ICON_X+" 閉じる":ICON_EDIT+" 編集する")+'</button>';
-    var editPanel="",tableInner;
+    var editPanel="",colPanel="",tableInner;
     if(flowEditOpen){
       editPanel=acard("担当の名前・色を編集","",
         FLOW_ROLE_CODES.map(function(code){
@@ -1336,24 +1346,39 @@
               return '<button type="button" class="fe-sw'+(c===color?" on":"")+'" data-code="'+code+'" data-c="'+c+'" style="background:'+c+'" aria-label="'+c+'"></button>';
             }).join("")+'</div></div>';
         }).join(""));
+      colPanel=acard("列を編集","",
+        '<div class="col-list" id="flow-col-list">'+flowColumnsDraft.map(function(col,ci){
+          return '<div class="col-chip"><input class="col-label" data-i="'+ci+'" value="'+esc(col.label)+'" maxlength="10">'+
+            (flowColumnsDraft.length>1?'<button type="button" class="col-del" data-i="'+ci+'" aria-label="削除">'+ICON_X+'</button>':'')+'</div>';
+        }).join("")+'</div>'+
+        '<div class="addrow"><input id="flow-col-new" placeholder="新しい列名（例：頻度）" maxlength="10"><button type="button" class="btn" id="flow-col-add">追加</button></div>');
       var editRows=flowRowsDraft.map(function(r,i){
         return '<div class="fr-card" data-i="'+i+'"><span class="fr-num">'+(i+1)+'</span>'+
-          '<div class="fr-field"><label>項目</label><input class="fr-item" value="'+esc(r.item)+'" placeholder="例：一次面接"></div>'+
-          '<div class="fr-field"><label>条件</label><input class="fr-cond" value="'+esc(r.cond||"")+'" placeholder="条件（任意）例：報酬金額の提示"></div>'+
-          '<div class="fr-field"><label>担当</label><input class="fr-owner" value="'+esc(r.owner)+'" placeholder="例：B（A）"></div>'+
+          flowColumnsDraft.map(function(col){
+            return '<div class="fr-field"><label>'+esc(col.label)+'</label><input class="fr-val" data-key="'+esc(col.key)+'" value="'+esc(r[col.key]||"")+'"></div>';
+          }).join("")+
           '<button type="button" class="fr-del" data-i="'+i+'">'+ICON_X+' この項目を削除</button></div>';
       }).join("");
       tableInner='<div id="flow-rows-edit" class="fr-cards">'+editRows+'</div>'+
         '<button type="button" class="linkbtn" id="flow-addrow-btn" style="color:var(--accent)">＋ 行を追加</button>';
     }else{
+      var cols=data.flowColumns;
+      var headHtml='<th></th>'+cols.map(function(col){return '<th>'+esc(col.label)+'</th>';}).join("");
       var rows=data.flowRows.map(function(r,i){
-        return '<tr><td class="fidx"><span class="idx">'+(i+1)+'</span></td><td class="fi">'+esc(r.item)+'</td><td class="fc">'+esc(r.cond||"—")+'</td><td class="fo">'+flowOwnerCellHTML(r.owner)+'</td></tr>';
+        var tds=cols.map(function(col){
+          var val=r[col.key]||"";
+          if(col.key==="owner")return '<td class="fo">'+flowOwnerCellHTML(val)+'</td>';
+          if(col.key==="item")return '<td class="fi">'+esc(val)+'</td>';
+          if(col.key==="cond")return '<td class="fc">'+esc(val||"—")+'</td>';
+          return '<td>'+esc(val||"—")+'</td>';
+        }).join("");
+        return '<tr><td class="fidx"><span class="idx">'+(i+1)+'</span></td>'+tds+'</tr>';
       }).join("");
-      tableInner='<div class="twrap"><table class="ftable flow"><thead><tr><th></th><th>項目</th><th>条件</th><th>担当</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      tableInner='<div class="twrap"><table class="ftable flow"><thead><tr>'+headHtml+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
     }
     document.getElementById("flow").innerHTML='<div class="ascreen"><h2>業務フロー</h2>'+
       '<div class="note" style="margin:0 0 12px">BPO_業務遂行フローを基にした参照表です（アプリ内の担当CAとは別管理）。</div>'+
-      editBtn+editPanel+
+      editBtn+editPanel+colPanel+
       acard("業務フロー一覧",(flowEditOpen?flowRowsDraft:data.flowRows).length+"項目",tableInner)+
       (flowEditOpen?'<button class="btn primary" id="flow-save-btn" style="width:100%;margin:14px 0 4px">変更を保存する</button>':'')+
       '</div>';
@@ -1361,6 +1386,7 @@
       if(flowEditOpen){flowEditOpen=false;renderFlow();return;}
       flowNamesDraft=Object.assign({},data.flowNames);flowColorsDraft=Object.assign({},data.flowColors);
       flowRowsDraft=data.flowRows.map(function(r){return Object.assign({},r);});
+      flowColumnsDraft=data.flowColumns.map(function(c){return Object.assign({},c);});
       flowEditOpen=true;renderFlow();
     });
     if(flowEditOpen){
@@ -1371,17 +1397,28 @@
         });
       });
       document.getElementById("flow-addrow-btn").addEventListener("click",function(){
-        syncFlowDraftFromDOM();flowRowsDraft.push({item:"",cond:"",owner:""});renderFlow();
-        var last=document.querySelector("#flow-rows-edit .fr-card:last-child .fr-item");if(last)last.focus();
+        syncFlowDraftFromDOM();flowRowsDraft.push({});renderFlow();
+        var last=document.querySelector("#flow-rows-edit .fr-card:last-child .fr-val");if(last)last.focus();
       });
       document.getElementById("flow-rows-edit").addEventListener("click",function(e){
         var b=e.target.closest(".fr-del");if(!b)return;
         syncFlowDraftFromDOM();flowRowsDraft.splice(+b.dataset.i,1);renderFlow();
       });
+      document.getElementById("flow-col-add").addEventListener("click",function(){
+        var inp=document.getElementById("flow-col-new");var label=inp.value.trim();if(!label)return;
+        syncFlowDraftFromDOM();data.flowColSeq++;flowColumnsDraft.push({key:"col"+data.flowColSeq,label:label});
+        renderFlow();
+      });
+      document.getElementById("flow-col-list").addEventListener("click",function(e){
+        var b=e.target.closest(".col-del");if(!b)return;
+        syncFlowDraftFromDOM();var removed=flowColumnsDraft.splice(+b.dataset.i,1)[0];
+        if(removed)flowRowsDraft.forEach(function(r){delete r[removed.key];});
+        renderFlow();
+      });
       document.getElementById("flow-save-btn").addEventListener("click",function(){
         syncFlowDraftFromDOM();
-        data.flowNames=flowNamesDraft;data.flowColors=flowColorsDraft;
-        data.flowRows=flowRowsDraft.filter(function(r){return r.item.trim();});
+        data.flowNames=flowNamesDraft;data.flowColors=flowColorsDraft;data.flowColumns=flowColumnsDraft;
+        data.flowRows=flowRowsDraft.filter(function(r){return Object.keys(r).some(function(k){return (r[k]||"").toString().trim();});});
         save();flowEditOpen=false;renderFlow();
       });
     }
