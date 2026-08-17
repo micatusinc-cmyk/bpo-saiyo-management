@@ -807,6 +807,8 @@
     if(!data.flowColumns)data.flowColumns=[{key:"item",label:"項目"},{key:"cond",label:"条件"},{key:"owner",label:"担当"}];
     if(data.flowColSeq==null)data.flowColSeq=0;
     if(s.monthlyFrom==null){var pm=prevMonthYM();s.monthlyFrom=pm;s.monthlyTo=pm;}
+    if(s.funnelFrom==null)s.funnelFrom="";
+    if(s.funnelTo==null)s.funnelTo="";
   }
   function splitTargets(t,budget,n){var o={budget:Math.round((budget||0)/n)};
     TKEYS.concat(["jitai","fusaiyo"]).forEach(function(k){o[k]=Math.round((t[k]||0)/n);});return o;}
@@ -1345,7 +1347,9 @@
     var selMonth=(data.settings.activeMonth&&months.indexOf(data.settings.activeMonth)>-1)?data.settings.activeMonth:"";
     var t=selMonth?(monthTargets(selMonth)||newTargetsFull()):aggregateTargets(months);
     var pool=selMonth?data.items.filter(function(c){return inMonth(c,selMonth);}):data.items.filter(inRange);
-    return {per:per,months:months,selMonth:selMonth,t:t,pool:pool};
+    var fFrom=data.settings.funnelFrom,fTo=data.settings.funnelTo,dayRange=!!(fFrom&&fTo);
+    if(dayRange)pool=data.items.filter(function(c){return c.applied&&c.applied>=fFrom&&c.applied<=fTo;});
+    return {per:per,months:months,selMonth:selMonth,t:t,pool:pool,dayRange:dayRange,fFrom:fFrom,fTo:fTo};
   }
   function funnelTable(sc){
     var t=sc.t,pool=sc.pool;
@@ -1516,7 +1520,13 @@
     var msel='<select class="aselect" id="ana-month"><option value="">期間全体</option>'+sc.months.map(function(ym){
       var l=ym.split("-")[0]+"年"+(+ym.split("-")[1])+"月";
       return '<option value="'+ym+'"'+(ym===sc.selMonth?" selected":"")+'>'+l+'</option>';}).join("")+'</select>';
-    var scopeLabel=sc.selMonth?(sc.selMonth.split("-")[0]+"年"+(+sc.selMonth.split("-")[1])+"月"):"期間全体（"+esc(per.name)+"）";
+    var scopeLabel=sc.dayRange?(fmt(sc.fFrom)+"〜"+fmt(sc.fTo)):
+      sc.selMonth?(sc.selMonth.split("-")[0]+"年"+(+sc.selMonth.split("-")[1])+"月"):"期間全体（"+esc(per.name)+"）";
+    var dayRangeUI='<div class="mr-row" style="margin-bottom:14px">'+
+      '<div class="mr-field"><label>開始日</label><input type="date" id="fn-from" value="'+esc(sc.fFrom||"")+'"></div>'+
+      '<div class="mr-field"><label>終了日</label><input type="date" id="fn-to" value="'+esc(sc.fTo||"")+'"></div>'+
+      (sc.dayRange?'<button type="button" class="mr-btn" id="fn-clear">クリア（月選択に戻す）</button>':'')+
+      '</div>';
     var mFrom=data.settings.monthlyFrom,mTo=data.settings.monthlyTo;
     var mLabel=(mFrom===mTo)?ymLabel(mFrom):(ymLabel(mFrom)+"〜"+ymLabel(mTo));
     var monthRangeUI='<div class="mr-row">'+
@@ -1533,7 +1543,7 @@
       '</div>'+
       '<button type="button" class="linkbtn" id="csv-template-btn" style="margin:-8px 0 4px;text-align:left;color:var(--accent)">テンプレートExcelをダウンロード</button>'+
       '<div class="kpis">'+kpi("ok",active.length,"選考中")+kpi("over",over,"遅延中")+kpi("rej",rejected.length,"辞退・不採用")+kpi("ok",ac[STAGES.length-1],"入職")+'</div>'+
-      acard("ファネル","実数と目標　・　"+scopeLabel,funnelChart(sc))+
+      acard("ファネル","実数と目標　・　"+scopeLabel,dayRangeUI+funnelChart(sc))+
       acard("歩留（目標 vs 実数）",scopeLabel,funnelTable(sc))+
       acard("月別の歩留",mLabel,monthRangeUI+monthlyTable())+
       acard("担当者の負荷（選考中）",dot("over")+"遅延",bars(ownerRows))+
@@ -1552,6 +1562,10 @@
     });
     document.getElementById("ana-period").addEventListener("change",function(){data.settings.activePeriod=this.value;data.settings.activeMonth="";save();renderAnalytics();});
     document.getElementById("ana-month").addEventListener("change",function(){data.settings.activeMonth=this.value;save();renderAnalytics();});
+    document.getElementById("fn-from").addEventListener("change",function(){data.settings.funnelFrom=this.value;save();renderAnalytics();});
+    document.getElementById("fn-to").addEventListener("change",function(){data.settings.funnelTo=this.value;save();renderAnalytics();});
+    var fnClear=document.getElementById("fn-clear");
+    if(fnClear)fnClear.addEventListener("click",function(){data.settings.funnelFrom="";data.settings.funnelTo="";save();renderAnalytics();});
     document.getElementById("mr-from").addEventListener("change",function(){data.settings.monthlyFrom=this.value;save();renderAnalytics();});
     document.getElementById("mr-to").addEventListener("change",function(){data.settings.monthlyTo=this.value;save();renderAnalytics();});
     document.getElementById("mr-prev").addEventListener("click",function(){var pm=prevMonthYM();data.settings.monthlyFrom=pm;data.settings.monthlyTo=pm;save();renderAnalytics();});
@@ -1604,8 +1618,7 @@
   function importXLSX(arrayBuffer){
     if(typeof XLSX==="undefined"){alert("Excel取込の準備中です。少し待ってからもう一度お試しください。");return;}
     var wb;try{wb=XLSX.read(arrayBuffer,{type:"array",cellDates:false});}catch(e){alert("Excelファイルを読み取れませんでした");return;}
-    var existingPhones={};data.items.forEach(function(c){if(c.phone)existingPhones[c.phone]=true;});
-    var added=0,skipped=0,sheetsUsed=0;
+    var added=0,sheetsUsed=0;
     wb.SheetNames.forEach(function(sn){
       var aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:"",raw:true});
       if(!aoa.length)return;
@@ -1621,7 +1634,6 @@
       for(var ri=headerRowIdx+1;ri<aoa.length;ri++){
         var r=aoa[ri];var name=getStr(r,"名前");if(!name)continue;
         var phone=getStr(r,"電話番号");
-        if(phone&&existingPhones[phone]){skipped++;continue;}
         var flags=[truthyCell(get(r,"有効")),truthyCell(get(r,"LINE流入")),truthyCell(get(r,"一次予約"))||truthyCell(get(r,"一次調整")),
           truthyCell(get(r,"一次着座")),truthyCell(get(r,"二次調整")),truthyCell(get(r,"二次着座")),truthyCell(get(r,"内定")),
           truthyCell(get(r,"内定承諾")),truthyCell(get(r,"入職"))];
@@ -1635,12 +1647,12 @@
           media:getStr(r,"媒体"),phone:phone,phoneStatus:getStr(r,"電話"),company:getStr(r,"屋号")};
         if(rejType){c.status="rejected";c.rejType=rejType;c.rejStage=stage;c.rejReason=getStr(r,"見送り理由");c.rejDate=iso(today());}
         else c.due[stage]=iso(addDays(today(),3));
-        data.items.push(c);if(phone)existingPhones[phone]=true;added++;
+        data.items.push(c);added++;
       }
     });
     if(!sheetsUsed){alert("「名前」列を含むシートが見つかりませんでした。テンプレートの形式で用意してください。");return;}
     save();spCa.refresh();render();
-    alert(added+"件を取り込みました"+(skipped?"（重複する電話番号 "+skipped+"件はスキップ）":""));
+    alert(added+"件を取り込みました");
   }
 
   // ---- drag & drop ----
