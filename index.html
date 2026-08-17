@@ -175,6 +175,16 @@
   .bar{width:52px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
   .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:3px}
   .card.done .bar i{background:var(--ok)}
+  .selchk{width:24px;height:24px;border-radius:8px;border:2px solid var(--line-strong);background:var(--panel);flex:none;margin-left:auto}
+  .card.picked{outline:2px solid var(--accent);outline-offset:-2px}
+  .card.picked .selchk{background:var(--accent);border-color:var(--accent);position:relative}
+  .card.picked .selchk::after{content:"";position:absolute;left:7px;top:3px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(40deg)}
+  .bulkbar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:31;display:flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:9px 10px 9px 18px;box-shadow:var(--shadow);
+    font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .bulkbar button{border:none;border-radius:999px;padding:9px 16px;font-size:13px;font-weight:750}
+  .bulkbar .bk-del{background:var(--over);color:#fff}
+  .bulkbar .bk-cancel{background:var(--panel-2);color:var(--ink)}
   .rej-meta{font-size:11px;color:var(--faint);margin-top:6px;font-weight:600}
   .rej-reason{font-size:13px;color:var(--muted);margin-top:5px}
   .rtag{display:inline-block;font-size:10px;font-weight:750;border-radius:5px;padding:2px 7px;margin-top:7px}
@@ -412,6 +422,15 @@
     .sheet,.drawer{max-width:680px}
     .grid2{grid-template-columns:repeat(4,1fr)}
     #set-targets{grid-template-columns:repeat(4,1fr)}
+
+    /* PCでは看板を横並び（左→右）のカンバン表示に */
+    .board:not(.single){flex-direction:row;align-items:flex-start;gap:16px;overflow-x:auto;padding-bottom:28px;-webkit-overflow-scrolling:touch}
+    .board:not(.single) > .lane,.board:not(.single) .early-lanes > .lane{flex:none;width:300px}
+    .board:not(.single) .drop{flex-direction:column;overflow-x:visible;overflow-y:auto;max-height:calc(100vh - 320px)}
+    .board:not(.single) .drop .card{width:100%}
+    .board:not(.single) .early-group{flex:none;display:flex;flex-direction:column}
+    .board:not(.single) .early-toggle{width:300px}
+    .board:not(.single) .early-lanes{flex-direction:row;padding:0;border-left:none;margin-left:0;margin-top:0;align-items:flex-start}
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -453,12 +472,20 @@
 
   <div class="filters" id="filters"></div>
   <div class="filters" id="stage-filters"></div>
+  <div id="select-row" style="display:flex;justify-content:flex-end;padding:0 16px 8px">
+    <button type="button" class="linkbtn" id="select-toggle" style="color:var(--accent)">選択して削除</button>
+  </div>
   <div class="board" id="board"></div>
   <div id="analytics" hidden></div>
   <div id="flow" hidden></div>
 </div>
 
 <button class="fab" id="fab">＋ 候補者を追加</button>
+<div class="bulkbar" id="bulkbar" hidden>
+  <span id="bulkbar-count">0件選択中</span>
+  <button type="button" class="bk-cancel" id="bulkbar-cancel">キャンセル</button>
+  <button type="button" class="bk-del" id="bulkbar-del">削除する</button>
+</div>
 <div class="scrim" id="scrim"></div>
 
 <!-- Left menu drawer -->
@@ -839,6 +866,7 @@
   }
 
   var filter="all",stageFilter="all",monthFilter="all",earlyCollapsed=true,view="active",justDragged=false,screen="home",q="";
+  var selectMode=false,selected={};
   var EARLY_STAGES=5; // 応募〜一次着座＝担当が付く前の初期対応。それ以降(二次調整〜入職)がメインレンジ
   function matchesMonth(c){return monthFilter==="all"||(c.applied&&c.applied.slice(0,7)===monthFilter);}
   function distinctAppliedMonths(){var s={};data.items.forEach(function(c){if(c.applied)s[c.applied.slice(0,7)]=true;});return Object.keys(s).sort();}
@@ -938,17 +966,28 @@
       el.addEventListener("click",function(){earlyCollapsed=!earlyCollapsed;render();});
     });
     board.querySelectorAll(".card").forEach(function(el){
-      el.addEventListener("click",function(){if(justDragged)return;openSheet(+el.dataset.id);});
+      el.addEventListener("click",function(){
+        if(justDragged)return;
+        var id=+el.dataset.id;
+        if(selectMode){if(selected[id])delete selected[id];else selected[id]=true;render();return;}
+        openSheet(id);
+      });
     });
 
     var isA=screen==="analytics",isF=screen==="flow",isOther=isA||isF;
+    if(isOther){selectMode=false;selected={};}
     document.getElementById("home-dash").hidden=isOther;
     document.getElementById("board").style.display=isOther?"none":"";
     document.getElementById("analytics").hidden=!isA;
     document.getElementById("flow").hidden=!isF;
-    document.getElementById("fab").style.display=isOther?"none":"";
+    document.getElementById("fab").style.display=(isOther||selectMode)?"none":"";
     document.getElementById("filters").style.display=(isOther||view==="rejected")?"none":"";
     document.getElementById("stage-filters").style.display=(isOther||view==="rejected")?"none":"";
+    document.getElementById("select-row").style.display=isOther?"none":"flex";
+    document.getElementById("select-toggle").textContent=selectMode?"選択をやめる":"選択して削除";
+    var selCount=Object.keys(selected).length;
+    document.getElementById("bulkbar").hidden=!(selectMode&&selCount>0);
+    document.getElementById("bulkbar-count").textContent=selCount+"件選択中";
     document.getElementById("screen-title").textContent=isA?"分析":isF?"業務フロー":"BPO採用管理";
     [].forEach.call(document.querySelectorAll("#drawer .mi"),function(b){
       b.setAttribute("aria-current",(b.dataset.s==="home"&&!isOther)||(b.dataset.s==="analytics"&&isA)||(b.dataset.s==="flow"&&isF));});
@@ -959,9 +998,11 @@
   function cardHTML(c){
     var s=stateOf(c),owner=c.ca,done=c.stage===STAGES.length-1;
     var dueTxt=c.due[c.stage]?relLabel(c.due[c.stage]):"期日なし";
-    return '<button class="card s-'+s+(done?' done':'')+'" data-id="'+c.id+'">'+
+    var picked=!!selected[c.id];
+    var rightIcon=selectMode?'<span class="selchk"></span>':av(owner);
+    return '<button class="card s-'+s+(done?' done':'')+(picked?' picked':'')+'" data-id="'+c.id+'">'+
       '<span class="stripe"></span>'+
-      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+av(owner)+'</div>'+
+      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+rightIcon+'</div>'+
       (c.job?'<div class="cjob">'+esc(c.job)+'</div>':'')+
       (c.media?'<div class="cmedia">'+esc(c.media)+'</div>':'')+
       '<div class="meta">'+
@@ -972,8 +1013,10 @@
   function rejCardHTML(c){
     var tg=[c.job,c.media,c.phone].filter(Boolean).map(function(x){return '<span class="tag">'+esc(x)+'</span>';}).join("");
     var type=c.rejType||"見送り",cl=REJ_CLASS[type]||"jitai";
-    return '<button class="card" data-id="'+c.id+'">'+
-      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+av(c.ca)+'</div>'+
+    var picked=!!selected[c.id];
+    var rightIcon=selectMode?'<span class="selchk"></span>':av(c.ca);
+    return '<button class="card'+(picked?' picked':'')+'" data-id="'+c.id+'">'+
+      '<div class="top"><span class="name">'+esc(c.name)+'</span>'+rightIcon+'</div>'+
       '<div><span class="rtag '+cl+'">'+esc(type)+'</span></div>'+
       '<div class="rej-meta">'+fmt(c.rejDate)+' ・ '+STAGES[c.rejStage||0].name+'まで到達</div>'+
       '<div class="rej-reason">'+esc(c.rejReason||"理由未記入")+'</div>'+
@@ -1102,6 +1145,14 @@
   // ---- search + view tabs + menu ----
   document.getElementById("search-input").addEventListener("input",function(){q=this.value.trim();render();});
   document.getElementById("viewtabs").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;view=b.dataset.v;render();});
+  document.getElementById("select-toggle").addEventListener("click",function(){selectMode=!selectMode;selected={};render();});
+  document.getElementById("bulkbar-cancel").addEventListener("click",function(){selectMode=false;selected={};render();});
+  document.getElementById("bulkbar-del").addEventListener("click",function(){
+    var ids=Object.keys(selected).map(Number);if(!ids.length)return;
+    if(!confirm(ids.length+"件の候補者を完全に削除します。この操作は取り消せません。よろしいですか？"))return;
+    data.items=data.items.filter(function(c){return ids.indexOf(c.id)<0;});
+    selectMode=false;selected={};save();render();
+  });
   document.getElementById("analytics").addEventListener("change",function(e){
     var inp=e.target.closest(".inline-budget");if(!inp)return;
     ensureMonthTargets(inp.dataset.ym)[inp.dataset.k]=+inp.value||0;save();renderAnalytics();
